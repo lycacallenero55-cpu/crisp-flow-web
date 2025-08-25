@@ -2,7 +2,7 @@
 
 -- 1. Create excuse_applications table
 CREATE TABLE public.excuse_applications (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  id BIGSERIAL PRIMARY KEY,
   student_id BIGINT NOT NULL REFERENCES public.students(id) ON DELETE CASCADE,
   session_id BIGINT REFERENCES public.sessions(id) ON DELETE SET NULL,
   absence_date DATE NOT NULL,
