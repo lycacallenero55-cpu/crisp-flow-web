@@ -102,119 +102,45 @@ export type Database = {
           },
         ]
       }
-      attendance_records: {
-        Row: {
-          attendance_id: number | null
-          created_at: string
-          date: string
-          id: string
-          notes: string | null
-          recorded_by: string | null
-          session_id: number
-          status: string
-          student_id: number
-          time_in: string | null
-          time_out: string | null
-          updated_at: string
-        }
-        Insert: {
-          attendance_id?: number | null
-          created_at?: string
-          date: string
-          id?: string
-          notes?: string | null
-          recorded_by?: string | null
-          session_id: number
-          status: string
-          student_id: number
-          time_in?: string | null
-          time_out?: string | null
-          updated_at?: string
-        }
-        Update: {
-          attendance_id?: number | null
-          created_at?: string
-          date?: string
-          id?: string
-          notes?: string | null
-          recorded_by?: string | null
-          session_id?: number
-          status?: string
-          student_id?: number
-          time_in?: string | null
-          time_out?: string | null
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "attendance_records_attendance_id_fkey"
-            columns: ["attendance_id"]
-            isOneToOne: false
-            referencedRelation: "attendance"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "attendance_records_session_id_fkey"
-            columns: ["session_id"]
-            isOneToOne: false
-            referencedRelation: "sessions"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "attendance_records_student_id_fkey"
-            columns: ["student_id"]
-            isOneToOne: false
-            referencedRelation: "student_signatures_view"
-            referencedColumns: ["student_id"]
-          },
-          {
-            foreignKeyName: "attendance_records_student_id_fkey"
-            columns: ["student_id"]
-            isOneToOne: false
-            referencedRelation: "students"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       excuse_applications: {
         Row: {
           absence_date: string
-          created_at: string
+          created_at: string | null
           documentation_url: string | null
-          id: string
+          id: number
           review_notes: string | null
           reviewed_at: string | null
           reviewed_by: string | null
           session_id: number | null
-          status: string
-          student_id: number
-          updated_at: string
+          status: string | null
+          student_id: number | null
+          updated_at: string | null
         }
         Insert: {
           absence_date: string
-          created_at?: string
+          created_at?: string | null
           documentation_url?: string | null
-          id?: string
+          id?: number
           review_notes?: string | null
           reviewed_at?: string | null
           reviewed_by?: string | null
           session_id?: number | null
-          status?: string
-          student_id: number
-          updated_at?: string
+          status?: string | null
+          student_id?: number | null
+          updated_at?: string | null
         }
         Update: {
           absence_date?: string
-          created_at?: string
+          created_at?: string | null
           documentation_url?: string | null
-          id?: string
+          id?: number
           review_notes?: string | null
           reviewed_at?: string | null
           reviewed_by?: string | null
           session_id?: number | null
-          status?: string
-          student_id?: number
-          updated_at?: string
+          status?: string | null
+          student_id?: number | null
+          updated_at?: string | null
         }
         Relationships: [
           {
@@ -388,217 +314,6 @@ export type Database = {
           year?: string
         }
         Relationships: []
-      }
-      signature_embeddings: {
-        Row: {
-          created_at: string | null
-          embedding: string
-          id: number
-          image_id: number | null
-          student_id: number
-        }
-        Insert: {
-          created_at?: string | null
-          embedding: string
-          id?: number
-          image_id?: number | null
-          student_id: number
-        }
-        Update: {
-          created_at?: string | null
-          embedding?: string
-          id?: number
-          image_id?: number | null
-          student_id?: number
-        }
-        Relationships: [
-          {
-            foreignKeyName: "signature_embeddings_image_id_fkey"
-            columns: ["image_id"]
-            isOneToOne: false
-            referencedRelation: "signature_images"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "signature_embeddings_student_id_fkey"
-            columns: ["student_id"]
-            isOneToOne: false
-            referencedRelation: "student_signatures_view"
-            referencedColumns: ["student_id"]
-          },
-          {
-            foreignKeyName: "signature_embeddings_student_id_fkey"
-            columns: ["student_id"]
-            isOneToOne: false
-            referencedRelation: "students"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      signature_images: {
-        Row: {
-          created_at: string | null
-          id: number
-          processed: boolean | null
-          public_url: string
-          storage_path: string
-          student_id: number
-          uploaded_at: string | null
-        }
-        Insert: {
-          created_at?: string | null
-          id?: number
-          processed?: boolean | null
-          public_url: string
-          storage_path: string
-          student_id: number
-          uploaded_at?: string | null
-        }
-        Update: {
-          created_at?: string | null
-          id?: number
-          processed?: boolean | null
-          public_url?: string
-          storage_path?: string
-          student_id?: number
-          uploaded_at?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "signature_images_student_id_fkey"
-            columns: ["student_id"]
-            isOneToOne: false
-            referencedRelation: "student_signatures_view"
-            referencedColumns: ["student_id"]
-          },
-          {
-            foreignKeyName: "signature_images_student_id_fkey"
-            columns: ["student_id"]
-            isOneToOne: false
-            referencedRelation: "students"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      signature_profiles: {
-        Row: {
-          created_at: string | null
-          embedding_centroid: string | null
-          error_message: string | null
-          last_trained_at: string | null
-          num_samples: number | null
-          status: string
-          student_id: number
-          threshold: number | null
-          updated_at: string | null
-        }
-        Insert: {
-          created_at?: string | null
-          embedding_centroid?: string | null
-          error_message?: string | null
-          last_trained_at?: string | null
-          num_samples?: number | null
-          status?: string
-          student_id: number
-          threshold?: number | null
-          updated_at?: string | null
-        }
-        Update: {
-          created_at?: string | null
-          embedding_centroid?: string | null
-          error_message?: string | null
-          last_trained_at?: string | null
-          num_samples?: number | null
-          status?: string
-          student_id?: number
-          threshold?: number | null
-          updated_at?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "signature_profiles_student_id_fkey"
-            columns: ["student_id"]
-            isOneToOne: true
-            referencedRelation: "student_signatures_view"
-            referencedColumns: ["student_id"]
-          },
-          {
-            foreignKeyName: "signature_profiles_student_id_fkey"
-            columns: ["student_id"]
-            isOneToOne: true
-            referencedRelation: "students"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      signature_verification_events: {
-        Row: {
-          candidate_student_id: number | null
-          created_at: string | null
-          decision: string
-          id: number
-          image_public_url: string | null
-          predicted_student_id: number | null
-          score: number
-          session_id: number | null
-        }
-        Insert: {
-          candidate_student_id?: number | null
-          created_at?: string | null
-          decision: string
-          id?: number
-          image_public_url?: string | null
-          predicted_student_id?: number | null
-          score: number
-          session_id?: number | null
-        }
-        Update: {
-          candidate_student_id?: number | null
-          created_at?: string | null
-          decision?: string
-          id?: number
-          image_public_url?: string | null
-          predicted_student_id?: number | null
-          score?: number
-          session_id?: number | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "signature_verification_events_candidate_student_id_fkey"
-            columns: ["candidate_student_id"]
-            isOneToOne: false
-            referencedRelation: "student_signatures_view"
-            referencedColumns: ["student_id"]
-          },
-          {
-            foreignKeyName: "signature_verification_events_candidate_student_id_fkey"
-            columns: ["candidate_student_id"]
-            isOneToOne: false
-            referencedRelation: "students"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "signature_verification_events_predicted_student_id_fkey"
-            columns: ["predicted_student_id"]
-            isOneToOne: false
-            referencedRelation: "student_signatures_view"
-            referencedColumns: ["student_id"]
-          },
-          {
-            foreignKeyName: "signature_verification_events_predicted_student_id_fkey"
-            columns: ["predicted_student_id"]
-            isOneToOne: false
-            referencedRelation: "students"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "signature_verification_events_session_id_fkey"
-            columns: ["session_id"]
-            isOneToOne: false
-            referencedRelation: "sessions"
-            referencedColumns: ["id"]
-          },
-        ]
       }
       signatures: {
         Row: {
