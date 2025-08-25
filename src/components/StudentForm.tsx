@@ -98,7 +98,14 @@ const StudentForm: React.FC<StudentFormProps> = ({ onStudentAdded }) => {
   };
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={(next) => {
+      if (!next) {
+        // explicit close via UI close or cancel will be handled; overlay/escape is disabled in component
+        setOpen(next)
+      } else {
+        setOpen(next)
+      }
+    }}>
       <DialogTrigger asChild>
         <Button className="bg-gradient-primary shadow-glow">
           <Plus className="w-4 h-4 mr-2" />
