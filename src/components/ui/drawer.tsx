@@ -18,7 +18,26 @@ const DrawerTrigger = DrawerPrimitive.Trigger
 
 const DrawerPortal = DrawerPrimitive.Portal
 
-const DrawerClose = DrawerPrimitive.Close
+const DrawerCloseBase = DrawerPrimitive.Close
+const DrawerClose = React.forwardRef<
+  React.ElementRef<typeof DrawerPrimitive.Close>,
+  React.ComponentPropsWithoutRef<typeof DrawerPrimitive.Close>
+>(({ onClick, ...props }, ref) => {
+  const handleClick: React.MouseEventHandler<HTMLButtonElement> = (e) => {
+    const root = (e.target as HTMLElement).closest('[data-modal-root="drawer"]') as HTMLElement | null
+    const hasDirty = !!root?.querySelector('[data-field-dirty="true"]')
+    if (hasDirty) {
+      const ok = window.confirm('You have unsaved changes. Are you sure you want to close?')
+      if (!ok) {
+        e.preventDefault()
+        e.stopPropagation()
+        return
+      }
+    }
+    onClick?.(e)
+  }
+  return <DrawerCloseBase ref={ref} onClick={handleClick} {...props} />
+})
 
 const DrawerOverlay = React.forwardRef<
   React.ElementRef<typeof DrawerPrimitive.Overlay>,
@@ -40,6 +59,9 @@ const DrawerContent = React.forwardRef<
     <DrawerOverlay />
     <DrawerPrimitive.Content
       ref={ref}
+      data-modal-root="drawer"
+      onEscapeKeyDown={(e) => e.preventDefault()}
+      onPointerDownOutside={(e) => e.preventDefault()}
       className={cn(
         "fixed inset-x-0 bottom-0 z-50 mt-24 flex h-auto flex-col rounded-t-[10px] border bg-background",
         className

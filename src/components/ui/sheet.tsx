@@ -9,7 +9,26 @@ const Sheet = SheetPrimitive.Root
 
 const SheetTrigger = SheetPrimitive.Trigger
 
-const SheetClose = SheetPrimitive.Close
+const SheetCloseBase = SheetPrimitive.Close
+const SheetClose = React.forwardRef<
+  React.ElementRef<typeof SheetPrimitive.Close>,
+  React.ComponentPropsWithoutRef<typeof SheetPrimitive.Close>
+>(({ onClick, ...props }, ref) => {
+  const handleClick: React.MouseEventHandler<HTMLButtonElement> = (e) => {
+    const root = (e.target as HTMLElement).closest('[data-modal-root="sheet"]') as HTMLElement | null
+    const hasDirty = !!root?.querySelector('[data-field-dirty="true"]')
+    if (hasDirty) {
+      const ok = window.confirm('You have unsaved changes. Are you sure you want to close?')
+      if (!ok) {
+        e.preventDefault()
+        e.stopPropagation()
+        return
+      }
+    }
+    onClick?.(e)
+  }
+  return <SheetCloseBase ref={ref} onClick={handleClick} {...props} />
+})
 
 const SheetPortal = SheetPrimitive.Portal
 
@@ -59,14 +78,17 @@ const SheetContent = React.forwardRef<
     <SheetOverlay />
     <SheetPrimitive.Content
       ref={ref}
+      data-modal-root="sheet"
+      onEscapeKeyDown={(e) => e.preventDefault()}
+      onPointerDownOutside={(e) => e.preventDefault()}
       className={cn(sheetVariants({ side }), className)}
       {...props}
     >
       {children}
-      <SheetPrimitive.Close className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-secondary">
+      <SheetClose className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-secondary">
         <X className="h-4 w-4" />
         <span className="sr-only">Close</span>
-      </SheetPrimitive.Close>
+      </SheetClose>
     </SheetPrimitive.Content>
   </SheetPortal>
 ))
