@@ -9,6 +9,8 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from "
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
+import { useUnsavedChanges } from "@/hooks/useUnsavedChanges";
+import { UnsavedChangesDialog } from "@/components/UnsavedChangesDialog";
 
 import { FileText, Clock, AlertCircle, CheckCircle2, Plus, Search, Filter, Eye, Check, X, ChevronsUpDown, CalendarIcon, Edit, ZoomIn, ZoomOut, Trash2 } from "lucide-react";
 import { format } from "date-fns";
@@ -80,6 +82,29 @@ const ExcuseApplicationContent = () => {
   const [viewMode, setViewMode] = useState<'view' | 'edit'>('view');
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<string | number | null>(null);
+
+  const {
+    showConfirmDialog,
+    markAsChanged,
+    markAsSaved,
+    handleClose,
+    confirmClose,
+    cancelClose,
+    handleOpenChange,
+  } = useUnsavedChanges({
+    onClose: () => {
+      setIsFormOpen(false);
+      setIsEditMode(false);
+      setSelectedExcuse(null);
+      setFormData({ 
+        student_id: '', 
+        session_id: '',
+        absence_date: '',
+        documentation_url: ''
+      });
+    },
+    enabled: isFormOpen,
+  });
 
   useEffect(() => {
     fetchExcuses();
@@ -216,6 +241,7 @@ const ExcuseApplicationContent = () => {
         });
       }
 
+      markAsSaved();
       setIsFormOpen(false);
       setIsEditMode(false);
       setSelectedExcuse(null);
@@ -560,19 +586,7 @@ const ExcuseApplicationContent = () => {
       )}
 
       {/* Form Dialog */}
-      <Dialog open={isFormOpen} onOpenChange={(open) => {
-        setIsFormOpen(open);
-        if (!open) {
-          setIsEditMode(false);
-          setSelectedExcuse(null);
-          setFormData({ 
-            student_id: '', 
-            session_id: '',
-            absence_date: '',
-            documentation_url: ''
-          });
-        }
-      }}>
+      <Dialog open={isFormOpen} onOpenChange={handleOpenChange}>
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>{isEditMode ? 'Edit Excuse Application' : 'New Excuse Application'}</DialogTitle>
@@ -605,10 +619,11 @@ const ExcuseApplicationContent = () => {
                       {students.map((student) => (
                         <CommandItem
                           key={student.id}
-                          onSelect={() => {
-                            setFormData(prev => ({ ...prev, student_id: student.id.toString() }));
-                            setOpenStudentSelect(false);
-                          }}
+                           onSelect={() => {
+                             setFormData(prev => ({ ...prev, student_id: student.id.toString() }));
+                             setOpenStudentSelect(false);
+                             markAsChanged();
+                           }}
                         >
                           <Check
                             className={cn(
@@ -652,10 +667,11 @@ const ExcuseApplicationContent = () => {
                       {sessions.map((session) => (
                         <CommandItem
                           key={session.id}
-                          onSelect={() => {
-                            setFormData(prev => ({ ...prev, session_id: session.id.toString() }));
-                            setOpenSessionSelect(false);
-                          }}
+                           onSelect={() => {
+                             setFormData(prev => ({ ...prev, session_id: session.id.toString() }));
+                             setOpenSessionSelect(false);
+                             markAsChanged();
+                           }}
                         >
                           <Check
                             className={cn(
@@ -684,12 +700,13 @@ const ExcuseApplicationContent = () => {
                 id="excuse-image"
                 type="file"
                 accept="image/*"
-                onChange={(e) => {
-                  const file = e.target.files?.[0];
-                  if (file) {
-                    setFormData(prev => ({ ...prev, excuse_image: file }));
-                  }
-                }}
+                 onChange={(e) => {
+                   const file = e.target.files?.[0];
+                   if (file) {
+                     setFormData(prev => ({ ...prev, excuse_image: file }));
+                     markAsChanged();
+                   }
+                 }}
                 className="cursor-pointer"
               />
               <p className="text-xs text-muted-foreground mt-1">
@@ -700,7 +717,7 @@ const ExcuseApplicationContent = () => {
 
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsFormOpen(false)}>
+            <Button variant="outline" onClick={handleClose}>
               Cancel
             </Button>
             <Button 
@@ -712,6 +729,12 @@ const ExcuseApplicationContent = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <UnsavedChangesDialog
+        open={showConfirmDialog}
+        onConfirm={confirmClose}
+        onCancel={cancelClose}
+      />
 
       {/* View Dialog */}
       <Dialog open={isViewOpen} onOpenChange={(open) => {

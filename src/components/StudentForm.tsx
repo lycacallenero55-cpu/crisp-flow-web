@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -7,6 +7,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, Dialog
 import { Plus, X } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/lib/supabase";
+import { useUnsavedChanges } from "@/hooks/useUnsavedChanges";
+import { UnsavedChangesDialog } from "@/components/UnsavedChangesDialog";
 
 interface StudentFormData {
   surname: string;
@@ -44,11 +46,25 @@ const StudentForm: React.FC<StudentFormProps> = ({ onStudentAdded }) => {
     email: ''
   });
 
+  const {
+    showConfirmDialog,
+    markAsChanged,
+    markAsSaved,
+    handleClose,
+    confirmClose,
+    cancelClose,
+    handleOpenChange,
+  } = useUnsavedChanges({
+    onClose: () => setOpen(false),
+    enabled: open,
+  });
+
   const handleInputChange = (field: keyof StudentFormData, value: string) => {
     setFormData(prev => ({
       ...prev,
       [field]: value
     }));
+    markAsChanged();
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -71,6 +87,7 @@ const StudentForm: React.FC<StudentFormProps> = ({ onStudentAdded }) => {
 
       if (data && data.length > 0) {
         toast.success('Student added successfully!');
+        markAsSaved();
         // Reset form
         setFormData({
           surname: '',
@@ -98,7 +115,8 @@ const StudentForm: React.FC<StudentFormProps> = ({ onStudentAdded }) => {
   };
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <>
+      <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
         <Button className="bg-gradient-primary shadow-glow">
           <Plus className="w-4 h-4 mr-2" />
@@ -107,12 +125,24 @@ const StudentForm: React.FC<StudentFormProps> = ({ onStudentAdded }) => {
       </DialogTrigger>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="text-2xl font-bold text-education-navy">
-            Add New Student
-          </DialogTitle>
-          <DialogDescription>
-            Fill in the student's information. Fields marked with * are required.
-          </DialogDescription>
+          <div className="flex justify-between items-start">
+            <div>
+              <DialogTitle className="text-2xl font-bold text-education-navy">
+                Add New Student
+              </DialogTitle>
+              <DialogDescription>
+                Fill in the student's information. Fields marked with * are required.
+              </DialogDescription>
+            </div>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={handleClose}
+              className="h-8 w-8 text-muted-foreground hover:text-foreground"
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
         </DialogHeader>
         
         <form onSubmit={handleSubmit} className="space-y-6">
@@ -263,7 +293,7 @@ const StudentForm: React.FC<StudentFormProps> = ({ onStudentAdded }) => {
             <Button
               type="button"
               variant="outline"
-              onClick={() => setOpen(false)}
+              onClick={handleClose}
             >
               Cancel
             </Button>
@@ -274,6 +304,13 @@ const StudentForm: React.FC<StudentFormProps> = ({ onStudentAdded }) => {
         </form>
       </DialogContent>
     </Dialog>
+
+    <UnsavedChangesDialog
+      open={showConfirmDialog}
+      onConfirm={confirmClose}
+      onCancel={cancelClose}
+    />
+  </>
   );
 };
 
