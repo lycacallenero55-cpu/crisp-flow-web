@@ -96,7 +96,7 @@ const PageWrapper = ({ children, showSkeleton = true, skeletonType = 'table' }: 
 
   if (isLoading) {
     return (
-      <div className="p-3">
+      <div className="px-6 py-4">
         {renderSkeleton()}
       </div>
     );

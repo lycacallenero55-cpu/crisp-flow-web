@@ -115,12 +115,25 @@ const TakeAttendanceSession = () => {
                                nav.mozGetUserMedia ||
                                nav.msGetUserMedia);
       
+      // Check if we're on a mobile device
+      const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+      const isLocalNetwork = ['localhost', '127.0.0.1', '192.168.254.100'].includes(window.location.hostname);
+      const isSecureContext = window.isSecureContext;
+      
       console.log('Basic media devices check:', {
         hasMediaDevices,
         hasGetUserMedia,
-        isSecureContext: window.isSecureContext,
+        isSecureContext,
+        isMobile,
+        isLocalNetwork,
         location: window.location.href
       });
+      
+      // For mobile devices, we need HTTPS unless on localhost
+      if (isMobile && !isSecureContext && !isLocalNetwork) {
+        setCameraAvailable(false);
+        return;
+      }
       
       // Just check for basic API support, don't enumerate devices yet
       setCameraAvailable(hasMediaDevices || hasGetUserMedia);
@@ -172,6 +185,12 @@ const TakeAttendanceSession = () => {
       // Check if we're on a mobile device and local network
       const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
       const isLocalNetwork = ['localhost', '127.0.0.1', '192.168.254.100'].includes(window.location.hostname);
+      const isSecureContext = window.isSecureContext;
+      
+      // Check HTTPS requirement for mobile devices
+      if (isMobile && !isSecureContext && !isLocalNetwork) {
+        throw new Error('Camera access requires HTTPS on mobile devices. Please use HTTPS or access from localhost.');
+      }
       
       if (isMobile && isLocalNetwork) {
         console.log('Mobile device on local network detected, using legacy API if needed');
@@ -348,6 +367,8 @@ const TakeAttendanceSession = () => {
           setError('Camera is already in use by another application.');
         } else if (err.name === 'TypeError' && err.message.includes('navigator.mediaDevices')) {
           setError('Your browser does not support camera access or is not in a secure context (try using HTTPS or localhost).');
+        } else if (err.message.includes('HTTPS')) {
+          setError(err.message);
         } else {
           setError(`Camera error: ${err.message}`);
         }
@@ -506,7 +527,7 @@ const TakeAttendanceSession = () => {
 
   return (
     <Layout>
-      <div className="p-4 space-y-6">
+      <div className="px-6 py-4 space-y-6">
         {/* Session Header - Left Aligned */}
         <div className="text-left space-y-1">
           <h1 className="text-3xl font-bold text-education-navy">{session.title}</h1>
@@ -580,11 +601,35 @@ const TakeAttendanceSession = () => {
                     <div className="mb-4 p-3 bg-amber-50 border border-amber-200 rounded-lg text-amber-800 text-sm">
                       <p className="font-medium">Camera access restricted</p>
                       <p className="text-xs">
-                        {!['localhost', '127.0.0.1', '192.168.254.100'].includes(window.location.hostname)
-                          ? 'Camera access is only available on localhost or 192.168.254.100.'
-                          : 'No camera was detected on this device.'
+                        {!window.isSecureContext && !['localhost', '127.0.0.1', '192.168.254.100'].includes(window.location.hostname)
+                          ? 'Camera access requires HTTPS on mobile devices. Please use HTTPS or access from localhost.'
+                          : 'No camera was detected on this device or camera access is not supported.'
                         }
                       </p>
+                    </div>
+                  )}
+
+                  {/* HTTPS Requirement Message for Mobile */}
+                  {/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) && 
+                   !window.isSecureContext && 
+                   !['localhost', '127.0.0.1', '192.168.254.100'].includes(window.location.hostname) && (
+                    <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg text-red-800">
+                      <div className="flex items-start">
+                        <div className="flex-shrink-0">
+                          <XCircle className="w-5 h-5 mt-0.5" />
+                        </div>
+                        <div className="ml-3">
+                          <h3 className="text-sm font-medium">HTTPS Required for Mobile Camera Access</h3>
+                          <div className="mt-2 text-sm">
+                            <p>Mobile browsers require HTTPS to access the camera. To use camera features:</p>
+                            <ul className="list-disc list-inside mt-1 space-y-1">
+                              <li>Use HTTPS instead of HTTP</li>
+                              <li>Access from localhost (localhost:3000)</li>
+                              <li>Use a secure development server</li>
+                            </ul>
+                          </div>
+                        </div>
+                      </div>
                     </div>
                   )}
 
@@ -645,7 +690,7 @@ const TakeAttendanceSession = () => {
                     {!cameraActive && !capturedImage ? (
                       <Button 
                         onClick={handleStartCamera}
-                        disabled={isRequestingCamera}
+                        disabled={isRequestingCamera || cameraAvailable === false}
                         className="w-full bg-teal-300 text-white hover:bg-teal-200 hover:text-teal-900 py-2 h-auto text-base transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                         size="lg"
                       >
@@ -657,7 +702,9 @@ const TakeAttendanceSession = () => {
                         ) : (
                           <>
                             <Play className="w-5 h-5 mr-2 text-white" />
-                            <span className="text-white">Start Camera</span>
+                            <span className="text-white">
+                              {cameraAvailable === false ? 'Camera Not Available' : 'Start Camera'}
+                            </span>
                           </>
                         )}
                       </Button>
@@ -675,14 +722,14 @@ const TakeAttendanceSession = () => {
                         <Button 
                           onClick={handleStopCamera}
                           variant="outline"
-                          className="w-24 py-2 h-auto text-base hover:bg-transparent hover:text-inherit active:bg-transparent focus:bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0"
+                          className="flex-shrink-0 px-3 sm:px-4 py-2 h-auto text-base hover:bg-transparent hover:text-inherit active:bg-transparent focus:bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0"
                           size="lg"
                         >
                           <div className="relative w-5 h-5 mr-2">
                             <Square className="w-4 h-4 text-red-600 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
                             <div className="w-3 h-3 bg-red-600 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
                           </div>
-                          Stop
+                          <span className="hidden sm:inline">Stop</span>
                         </Button>
                       </div>
                     ) : capturedImage ? (

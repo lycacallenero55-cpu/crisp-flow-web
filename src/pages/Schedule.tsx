@@ -1183,7 +1183,7 @@ const Schedule = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-      <div className="p-3 space-y-4">
+      <div className="px-6 py-4 space-y-4">
         {/* Header */}
         <div className="flex justify-between items-center mb-4">
           <div>

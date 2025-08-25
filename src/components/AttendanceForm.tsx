@@ -449,7 +449,7 @@ const AttendanceForm = ({ onSuccess, onSubmit, initialData }: AttendanceFormProp
   };
 
   return (
-    <div className="w-full max-w-[53.5rem] mx-auto px-4 py-2">
+    <div className="w-full max-w-none mx-auto px-6 py-4">
       <div className="border-b border-border/30 pb-2 mb-3 flex justify-between items-center">
         <h2 className="flex items-center gap-2 text-education-navy text-xl font-semibold">
           <CalendarIcon className="w-5 h-5 text-education-blue" />

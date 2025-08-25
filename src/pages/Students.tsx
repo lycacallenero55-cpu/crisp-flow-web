@@ -43,6 +43,7 @@ interface FilterState {
 const Students = () => {
   const [students, setStudents] = useState<Student[]>([]);
   const [loading, setLoading] = useState(false);
+  const [totalStudentsCount, setTotalStudentsCount] = useState(0);
   const [searchTerm, setSearchTerm] = useState('');
   const [filters, setFilters] = useState<FilterState>({
     program: '',
@@ -89,6 +90,24 @@ const Students = () => {
     program: string | null;
     year: string | null;
   }
+
+  // Fetch total students count (unfiltered)
+  const fetchTotalStudentsCount = useCallback(async () => {
+    try {
+      const { count, error } = await supabase
+        .from('students')
+        .select('*', { count: 'exact', head: true });
+      
+      if (error) {
+        console.error('Error fetching total students count:', error);
+        return;
+      }
+      
+      setTotalStudentsCount(count || 0);
+    } catch (error) {
+      console.error('Error fetching total students count:', error);
+    }
+  }, []);
 
   // Fetch filter options with pagination
   const fetchFilterOptions = useCallback(async () => {
@@ -311,6 +330,7 @@ const Students = () => {
   useEffect(() => {
     fetchFilterOptions();
     fetchStudents('', '', '', 1, 50);
+    fetchTotalStudentsCount();
   }, []);
 
   // Cleanup debounced function
@@ -323,6 +343,8 @@ const Students = () => {
   const handleStudentAdded = () => {
     // Refresh current page
     fetchStudents(searchTerm, filters.program, filters.year, pagination.currentPage, pagination.pageSize);
+    // Refresh total count
+    fetchTotalStudentsCount();
     toast.success('Student added successfully!');
   };
 
@@ -334,11 +356,14 @@ const Students = () => {
       totalCount: Math.max(0, prev.totalCount - 1),
       totalPages: Math.ceil(Math.max(0, prev.totalCount - 1) / prev.pageSize)
     }));
+    // Update total students count
+    setTotalStudentsCount(prev => Math.max(0, prev - 1));
     toast.success('Student deleted successfully!');
     
     // Refresh to ensure consistency
     setTimeout(() => {
       fetchStudents(searchTerm, filters.program, filters.year, pagination.currentPage, pagination.pageSize);
+      fetchTotalStudentsCount();
     }, 500);
   };
 
@@ -631,7 +656,7 @@ const Students = () => {
   return (
     <Layout>
       <PageWrapper skeletonType="table">
-        <div className="container mx-auto p-3">
+        <div className="px-6 py-4">
         <div className="mb-3">
           <div className="flex flex-col">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-1">
@@ -1131,7 +1156,7 @@ const Students = () => {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mt-8">
         <Card className="bg-gradient-card border-0 shadow-card">
           <CardContent className="p-4 text-center">
-            <div className="text-2xl font-bold text-gray-900">{pagination.totalCount.toLocaleString()}</div>
+            <div className="text-2xl font-bold text-gray-900">{totalStudentsCount.toLocaleString()}</div>
             <div className="text-sm text-gray-500">Total Students</div>
           </CardContent>
         </Card>

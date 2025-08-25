@@ -20,6 +20,7 @@ import Profile from "./pages/Profile";
 import { AuthProvider } from "./contexts/AuthContext";
 import { SidebarProvider } from "./contexts/SidebarContext";
 import { useAuth } from "./hooks/useAuth";
+import { usePageTitle } from "./hooks/usePageTitle";
 import { RoleProtectedRoute } from "./components/RoleProtectedRoute";
 
 const queryClient = new QueryClient();
@@ -39,8 +40,11 @@ const ProtectedRoute = ({ children }: { children: JSX.Element }) => {
   return children;
 };
 
-const AppRoutes = () => (
-  <Routes>
+const AppRoutes = () => {
+  usePageTitle(); // Add dynamic page title hook
+  
+  return (
+    <Routes>
     <Route path="/login" element={<Login />} />
     <Route
       path="/"
@@ -148,8 +152,9 @@ const AppRoutes = () => (
       }
     />
     <Route path="*" element={<NotFound />} />
-  </Routes>
-);
+    </Routes>
+  );
+};
 
 const App = () => (
   <QueryClientProvider client={queryClient}>

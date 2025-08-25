@@ -419,7 +419,7 @@ const AcademicYear = () => {
 
   return (
     <Layout>
-      <div className="flex-1 space-y-4 p-3">
+      <div className="flex-1 space-y-4 px-6 py-4">
         <div className="flex items-center justify-between">
           <div>
             <h2 className="text-3xl font-bold tracking-tight">Academic Years</h2>

@@ -93,11 +93,7 @@ const getNavItems = (userRole: string = '') => [
 ];
 
 // Desktop Sidebar Navigation
-interface DesktopNavigationProps {
-  onLogoutClick?: () => void;
-}
-
-const DesktopNavigation = ({ onLogoutClick = () => {} }: DesktopNavigationProps) => {
+const DesktopNavigation = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
@@ -106,8 +102,8 @@ const DesktopNavigation = ({ onLogoutClick = () => {} }: DesktopNavigationProps)
     // Initialize with cached role if available
     return cachedUserRole || 'user';
   });
-  const [isCollapsing, setIsCollapsing] = useState(false);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+  const [isCollapsing, setIsCollapsing] = useState(false);
   const isInitialMount = useRef(true);
   const navItems = getNavItems(userRole);
 
@@ -530,18 +526,26 @@ const DesktopNavigation = ({ onLogoutClick = () => {} }: DesktopNavigationProps)
       
       {/* Logout Confirmation Dialog */}
       <Dialog open={showLogoutConfirm} onOpenChange={setShowLogoutConfirm}>
-        <DialogContent>
+        <DialogContent className="!max-w-md w-[90vw] mx-auto rounded-lg">
           <DialogHeader>
             <DialogTitle>Confirm Logout</DialogTitle>
             <DialogDescription>
               Are you sure you want to log out? You will need to sign in again to access your account.
             </DialogDescription>
           </DialogHeader>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowLogoutConfirm(false)}>
+          <DialogFooter className="!flex !flex-row !justify-end gap-2 sm:gap-3">
+            <Button 
+              variant="outline" 
+              onClick={() => setShowLogoutConfirm(false)}
+              className="flex-1 sm:flex-none sm:min-w-[80px]"
+            >
               Cancel
             </Button>
-            <Button variant="destructive" onClick={confirmLogout}>
+            <Button 
+              variant="destructive" 
+              onClick={confirmLogout}
+              className="flex-1 sm:flex-none sm:min-w-[80px]"
+            >
               Log Out
             </Button>
           </DialogFooter>
@@ -553,13 +557,7 @@ const DesktopNavigation = ({ onLogoutClick = () => {} }: DesktopNavigationProps)
 };
 
 // Mobile Sidebar Navigation (Drawer)
-interface MobileDrawerProps {
-  isOpen: boolean;
-  onClose: () => void;
-  onLogoutClick: () => void;
-}
-
-const MobileDrawer = ({ isOpen, onClose, onLogoutClick }: MobileDrawerProps) => {
+const MobileDrawer = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) => {
   const location = useLocation();
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
@@ -568,14 +566,23 @@ const MobileDrawer = ({ isOpen, onClose, onLogoutClick }: MobileDrawerProps) => 
     return cachedUserRole || 'user';
   });
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+  const [isVisible, setIsVisible] = useState(false);
+  const [isAnimating, setIsAnimating] = useState(false);
   const isInitialMount = useRef(true);
-  const navItems = getNavItems(userRole).filter(item => {
-    // Filter out admin-only items for non-admin users
-    if (['/students', '/academic-year', '/accounts'].includes(item.href)) {
-      return userRole === 'admin';
+  const navItems = getNavItems(userRole);
+
+  // Handle animation states
+  useEffect(() => {
+    if (isOpen) {
+      setIsVisible(true);
+    } else {
+      // Delay hiding to allow animation to complete
+      const timer = setTimeout(() => {
+        setIsVisible(false);
+      }, 300); // Match transition duration
+      return () => clearTimeout(timer);
     }
-    return true;
-  });
+  }, [isOpen]);
 
   useEffect(() => {
     const fetchUserRole = async () => {
@@ -659,84 +666,29 @@ const MobileDrawer = ({ isOpen, onClose, onLogoutClick }: MobileDrawerProps) => 
     await handleLogout();
   };
   
-  const [isMounted, setIsMounted] = useState(false);
-  const [isAnimating, setIsAnimating] = useState(false);
-  const animationRef = useRef<number>();
-
-  useEffect(() => {
-    if (isOpen) {
-      // Set mounted first
-      setIsMounted(true);
-      // Force a reflow before starting animation
-      requestAnimationFrame(() => {
-        // Ensure the DOM has updated with mounted state
-        requestAnimationFrame(() => {
-          setIsAnimating(true);
-        });
-      });
-    } else {
-      // Start closing animation
-      setIsAnimating(false);
-      // Wait for animation to complete before unmounting
-      animationRef.current = window.setTimeout(() => {
-        setIsMounted(false);
-      }, 300); // Match with CSS transition duration
-    }
-
-    return () => {
-      if (animationRef.current) {
-        clearTimeout(animationRef.current);
-      }
-    };
-  }, [isOpen]);
-
-  // Always render the component when mounted to ensure consistent animations
-  if (!isMounted) return null;
+  if (!isVisible) return null;
 
   return (
     <div className="fixed inset-0 z-[60] md:hidden">
+      {/* Backdrop */}
       <div 
-        className={`fixed inset-0 bg-black/50 transition-opacity duration-200 ${isOpen ? 'opacity-100' : 'opacity-0'}`} 
+        className={cn(
+          "fixed inset-0 bg-black/50 transition-opacity duration-300 ease-in-out",
+          isOpen ? "opacity-100" : "opacity-0"
+        )}
         onClick={onClose} 
-        style={{ backdropFilter: 'blur(2px)' }}
       />
-      {/* Custom dialog implementation */}
-      {showLogoutConfirm && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-          <div 
-            className="fixed inset-0 bg-black/50 transition-opacity" 
-            onClick={() => setShowLogoutConfirm(false)} 
-          />
-          <div className="relative z-[101] w-full max-w-md rounded-lg bg-background p-6 shadow-lg">
-            <div className="space-y-2">
-              <h2 className="text-lg font-semibold">Confirm Logout</h2>
-              <p className="text-sm text-muted-foreground">
-                Are you sure you want to log out? You will need to sign in again to access your account.
-              </p>
-            </div>
-            <div className="mt-6 flex justify-end space-x-2">
-              <Button variant="outline" onClick={() => setShowLogoutConfirm(false)}>
-                Cancel
-              </Button>
-              <Button variant="destructive" onClick={confirmLogout}>
-                Log Out
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
+      
+      {/* Drawer */}
       <div 
-        className={`fixed inset-y-0 left-0 w-72 bg-background p-6 overflow-y-auto transform ${
-          isMounted ? 'transition-transform duration-300 ease-out' : ''
-        } ${isAnimating ? 'translate-x-0' : '-translate-x-full'}`}
+        className={cn(
+          "fixed inset-y-0 left-0 w-64 bg-background p-6 overflow-y-auto",
+          isOpen ? "animate-slide-in" : "animate-slide-out"
+        )}
         style={{
-          willChange: 'transform',
-          boxShadow: '2px 0 10px rgba(0, 0, 0, 0.1)',
-          // Ensure hardware acceleration
-          backfaceVisibility: 'hidden',
-          WebkitBackfaceVisibility: 'hidden',
-          transformStyle: 'preserve-3d',
-          WebkitTransformStyle: 'preserve-3d'
+          animationDuration: '300ms',
+          animationTimingFunction: 'ease-in-out',
+          animationFillMode: 'forwards'
         }}
       >
         <div className="flex justify-between items-center mb-8">
@@ -749,7 +701,7 @@ const MobileDrawer = ({ isOpen, onClose, onLogoutClick }: MobileDrawerProps) => 
               <p className="text-sm text-muted-foreground">{getPanelLabel()}</p>
             </div>
           </div>
-          <Button variant="ghost" size="icon" onClick={onClose} className="ml-2">
+          <Button variant="ghost" size="icon" onClick={onClose}>
             <X className="h-5 w-5" />
           </Button>
         </div>
@@ -760,7 +712,7 @@ const MobileDrawer = ({ isOpen, onClose, onLogoutClick }: MobileDrawerProps) => 
               MENU
             </span>
           </div>
-          {navItems.map((item) => {
+          {navItems.filter(item => item.href !== '/students' && item.href !== '/academic-year' || userRole === 'admin').map((item) => {
             const isActive = item.isActive 
               ? item.isActive(location.pathname) 
               : location.pathname === item.href;
@@ -808,12 +760,7 @@ const MobileDrawer = ({ isOpen, onClose, onLogoutClick }: MobileDrawerProps) => 
             variant="ghost"
             className="w-full justify-start gap-3 h-10 text-sm transition-all duration-200 group relative overflow-hidden hover:bg-destructive/10 hover:text-destructive text-destructive/90"
             style={{ margin: '1px 0' }}
-            onClick={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              setShowLogoutConfirm(true);
-              // Don't close the menu automatically - let the dialog handle it
-            }}
+            onClick={handleLogoutClick}
           >
             <LogOut className="w-4.5 h-4.5" />
             Log Out
@@ -823,18 +770,26 @@ const MobileDrawer = ({ isOpen, onClose, onLogoutClick }: MobileDrawerProps) => 
 
       {/* Logout Confirmation Dialog */}
       <Dialog open={showLogoutConfirm} onOpenChange={setShowLogoutConfirm}>
-        <DialogContent>
+        <DialogContent className="!max-w-md w-[90vw] mx-auto rounded-lg">
           <DialogHeader>
             <DialogTitle>Confirm Logout</DialogTitle>
             <DialogDescription>
               Are you sure you want to log out? You will need to sign in again to access your account.
             </DialogDescription>
           </DialogHeader>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowLogoutConfirm(false)}>
+          <DialogFooter className="!flex !flex-row !justify-end gap-2 sm:gap-3">
+            <Button 
+              variant="outline" 
+              onClick={() => setShowLogoutConfirm(false)}
+              className="flex-1 sm:flex-none sm:min-w-[80px]"
+            >
               Cancel
             </Button>
-            <Button variant="destructive" onClick={confirmLogout}>
+            <Button 
+              variant="destructive" 
+              onClick={confirmLogout}
+              className="flex-1 sm:flex-none sm:min-w-[80px]"
+            >
               Log Out
             </Button>
           </DialogFooter>
@@ -844,73 +799,47 @@ const MobileDrawer = ({ isOpen, onClose, onLogoutClick }: MobileDrawerProps) => 
   );
 };
 
-// Navigation component props
-interface NavigationProps {
-  isMobileOpen?: boolean;
-  onMobileClose?: () => void;
-}
-
 // Main Navigation Component
-const Navigation = ({ isMobileOpen = false, onMobileClose = () => {} }: NavigationProps) => {
+const Navigation = () => {
   const isDesktop = useMediaQuery("(min-width: 768px)");
-  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
-  const [isLoggingOut, setIsLoggingOut] = useState(false);
-  const { signOut } = useAuth();
-  const navigate = useNavigate();
+  const [isMobileOpen, setIsMobileOpen] = useState(false);
 
-  const handleConfirmLogout = async () => {
-    try {
-      setIsLoggingOut(true);
-      await signOut();
-      setShowLogoutConfirm(false);
-      navigate('/login');
-    } catch (error) {
-      console.error('Error signing out:', error);
-      setIsLoggingOut(false);
-    }
+  const toggleMobileDrawer = () => {
+    setIsMobileOpen(!isMobileOpen);
   };
 
-  const renderContent = () => {
-    if (isDesktop) {
-      return <DesktopNavigation onLogoutClick={() => setShowLogoutConfirm(true)} />;
-    }
-    return <MobileDrawer isOpen={isMobileOpen} onClose={onMobileClose} onLogoutClick={() => {
-      onMobileClose();
-      setShowLogoutConfirm(true);
-    }} />;
+  const closeMobileDrawer = () => {
+    setIsMobileOpen(false);
   };
+
+
+
+  if (isDesktop) {
+    return (
+      <div className="fixed left-0 top-0 h-full z-40">
+        <DesktopNavigation />
+      </div>
+    );
+  }
 
   return (
     <>
-      {renderContent()}
-      <Dialog open={showLogoutConfirm} onOpenChange={!isLoggingOut ? setShowLogoutConfirm : undefined}>
-        <DialogContent className="sm:max-w-[425px]">
-          <DialogHeader>
-            <DialogTitle className="text-xl">Confirm Logout</DialogTitle>
-            <DialogDescription className="text-base">
-              Are you sure you want to log out? You'll need to sign in again to access your account.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter className="flex flex-col sm:flex-row gap-2 w-full">
-            <Button 
-              variant="outline" 
-              className="w-full sm:w-auto h-12 sm:h-10 text-base sm:text-sm"
-              onClick={() => setShowLogoutConfirm(false)}
-              disabled={isLoggingOut}
-            >
-              Cancel
-            </Button>
-            <Button 
-              variant="destructive" 
-              className="w-full sm:w-auto h-12 sm:h-10 text-base sm:text-sm font-medium"
-              onClick={handleConfirmLogout}
-              disabled={isLoggingOut}
-            >
-              {isLoggingOut ? 'Logging out...' : 'Log Out'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      {/* Mobile Header */}
+      <header className="sticky top-0 z-50 md:hidden bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b border-sidebar-border px-4 py-3">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 bg-gradient-primary rounded-lg flex items-center justify-center">
+              <GraduationCap className="w-5 h-5 text-primary-foreground" />
+            </div>
+            <h1 className="text-lg font-bold text-education-navy">AMSUIP</h1>
+          </div>
+          <Button variant="ghost" size="icon" onClick={toggleMobileDrawer}>
+            <Menu className="h-5 w-5" />
+          </Button>
+        </div>
+      </header>
+      
+      <MobileDrawer isOpen={isMobileOpen} onClose={closeMobileDrawer} />
     </>
   );
 };

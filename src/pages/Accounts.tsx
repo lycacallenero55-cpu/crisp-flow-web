@@ -199,7 +199,7 @@ const Accounts = () => {
   return (
     <Layout>
       <PageWrapper skeletonType="table">
-        <div className="container mx-auto p-4 space-y-6">
+        <div className="px-6 py-4 space-y-6">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div>
             <h1 className="text-2xl font-bold tracking-tight">Account Management</h1>

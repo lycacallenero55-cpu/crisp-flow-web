@@ -1,6 +1,7 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { CalendarDays, Users, BookOpen, Clock, TrendingUp, CheckCircle2, Calendar, BarChart3, LineChart } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { CalendarDays, Users, BookOpen, TrendingUp, CheckCircle2, BarChart3, Clock, Activity, Target, AlertCircle, Calendar } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
 import { useEffect, useState, useRef, useCallback, useMemo } from "react";
@@ -36,44 +37,59 @@ const setCachedUserRole = (role: string, userId: string) => {
 let cachedUserRole: string | null = getCachedUserRole();
 let cachedUserId: string | null = getCachedUserId();
 
+// Enhanced mock data generation with more realistic patterns
 const generateMockData = (period: 'daily' | 'weekly' | 'monthly') => {
   if (period === 'daily') {
     return Array.from({ length: 7 }, (_, i) => {
       const date = new Date();
       date.setDate(date.getDate() - (6 - i));
       const dayName = date.toLocaleDateString('en-US', { weekday: 'short' });
+      const isWeekend = date.getDay() === 0 || date.getDay() === 6;
+      const baseAttendance = isWeekend ? 0.85 : 0.92; // Lower attendance on weekends
+      const totalStudents = 1500;
+      const present = Math.floor(totalStudents * baseAttendance + (Math.random() - 0.5) * 50);
+      const absent = totalStudents - present;
       return {
         name: dayName,
-        present: Math.floor(Math.random() * 50) + 70, // 70-120
-        absent: Math.floor(Math.random() * 10) + 5,   // 5-15
+        present,
+        absent,
+        date: date.toISOString().split('T')[0]
       };
     });
   } else if (period === 'weekly') {
-    return Array.from({ length: 8 }, (_, i) => ({
-      name: `Week ${i + 1}`,
-      present: Math.floor(Math.random() * 100) + 200,  // 200-300
-      absent: Math.floor(Math.random() * 30) + 10,     // 10-40
-    }));
+    return Array.from({ length: 8 }, (_, i) => {
+      const baseAttendance = 0.90 + (Math.random() - 0.5) * 0.1;
+      const totalStudents = 1500;
+      const present = Math.floor(totalStudents * baseAttendance);
+      const absent = totalStudents - present;
+      return {
+        name: `Week ${i + 1}`,
+        present,
+        absent,
+        week: i + 1
+      };
+    });
   } else { // monthly
     return [
-      { name: 'Jan', present: 240, absent: 15 },
-      { name: 'Feb', present: 230, absent: 20 },
-      { name: 'Mar', present: 250, absent: 12 },
-      { name: 'Apr', present: 260, absent: 10 },
-      { name: 'May', present: 270, absent: 8 },
-      { name: 'Jun', present: 280, absent: 5 },
-      { name: 'Jul', present: 290, absent: 4 },
-      { name: 'Aug', present: 300, absent: 3 },
+      { name: 'Jan', present: 1350, absent: 150, month: 1 },
+      { name: 'Feb', present: 1320, absent: 180, month: 2 },
+      { name: 'Mar', present: 1380, absent: 120, month: 3 },
+      { name: 'Apr', present: 1410, absent: 90, month: 4 },
+      { name: 'May', present: 1440, absent: 60, month: 5 },
+      { name: 'Jun', present: 1470, absent: 30, month: 6 },
+      { name: 'Jul', present: 1485, absent: 15, month: 7 },
+      { name: 'Aug', present: 1500, absent: 0, month: 8 },
     ];
   }
 };
+
+
 
 const Dashboard = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [userProfile, setUserProfile] = useState<any>(null);
   const [userRole, setUserRole] = useState<string>(() => {
-    // Initialize with cached role if available
     return cachedUserRole || 'user';
   });
   const [totalStudents, setTotalStudents] = useState(0);
@@ -81,11 +97,128 @@ const Dashboard = () => {
   const isInitialMount = useRef(true);
   const [timePeriod, setTimePeriod] = useState<'daily' | 'weekly' | 'monthly'>('monthly');
   const [chartData, setChartData] = useState<Array<{name: string, present: number, absent: number}>>([]);
+  const [realTimeStats, setRealTimeStats] = useState({
+    todayAttendance: 0,
+    todaySessions: 0,
+    activeClasses: 0,
+    pendingExcuses: 0
+  });
+  
+  // Academic Year state
+  const [academicYear, setAcademicYear] = useState<{
+    year: string;
+    semester: string;
+    status: 'active' | 'inactive';
+  } | null>(null);
+  
+  // Recent Sessions interface and state
+  interface RecentSession {
+    id: string;
+    course: string;
+    students: number;
+    time: string;
+    timeAgo: string;
+    status: 'completed' | 'ongoing' | 'upcoming';
+    attendanceRate?: number;
+  }
+  
+  const [recentSessions, setRecentSessions] = useState<RecentSession[]>([]);
+
+  // Enhanced fetch recent sessions with more realistic data
+  const fetchRecentSessions = useCallback(async () => {
+    try {
+      const mockSessions: RecentSession[] = [
+        {
+          id: '1',
+          course: 'CS 101 - Introduction to Programming',
+          students: 45,
+          time: '9:00 AM - 10:30 AM',
+          timeAgo: '2 min ago',
+          status: 'completed',
+          attendanceRate: 93
+        },
+        {
+          id: '2',
+          course: 'MATH 201 - Calculus II',
+          students: 38,
+          time: '11:00 AM - 12:30 PM',
+          timeAgo: '15 min ago',
+          status: 'ongoing',
+          attendanceRate: 87
+        },
+        {
+          id: '3',
+          course: 'ENG 101 - English Composition',
+          students: 42,
+          time: '2:00 PM - 3:30 PM',
+          timeAgo: '1 hour ago',
+          status: 'upcoming'
+        },
+        {
+          id: '4',
+          course: 'PHY 101 - Physics Fundamentals',
+          students: 35,
+          time: '4:00 PM - 5:30 PM',
+          timeAgo: '3 hours ago',
+          status: 'completed',
+          attendanceRate: 91
+        },
+        {
+          id: '5',
+          course: 'CHEM 101 - General Chemistry',
+          students: 40,
+          time: '8:00 AM - 9:30 AM',
+          timeAgo: '5 hours ago',
+          status: 'completed',
+          attendanceRate: 88
+        }
+      ];
+      
+      setRecentSessions(mockSessions);
+    } catch (error) {
+      console.error('Error fetching recent sessions:', error);
+    }
+  }, []);
+
+  // Fetch real-time statistics
+  const fetchRealTimeStats = useCallback(async () => {
+    try {
+      // Mock real-time data - in production, this would fetch from actual database
+      setRealTimeStats({
+        todayAttendance: 1410,
+        todaySessions: 8,
+        activeClasses: 24,
+        pendingExcuses: 12
+      });
+    } catch (error) {
+      console.error('Error fetching real-time stats:', error);
+    }
+  }, []);
+
+  // Fetch current academic year
+  const fetchAcademicYear = useCallback(async () => {
+    try {
+      // Mock academic year data - in production, this would fetch from actual database
+      setAcademicYear({
+        year: '2024-2025',
+        semester: 'First Semester',
+        status: 'active'
+      });
+    } catch (error) {
+      console.error('Error fetching academic year:', error);
+    }
+  }, []);
 
   useEffect(() => {
     fetchUserProfile();
     fetchTotalStudents();
-  }, [user]);
+    fetchRecentSessions();
+    fetchRealTimeStats();
+    fetchAcademicYear();
+    
+    // Initialize chart data
+    setChartData(generateMockData(timePeriod));
+  }, [user, timePeriod]);
 
   const fetchUserProfile = async () => {
     // If we have cached role for the same user, don't refetch
@@ -164,9 +297,18 @@ const Dashboard = () => {
     }
   };
 
-  const handleViewCalendar = () => {
-    navigate('/schedule');
+  // Handle session click
+  const handleSessionClick = (session: RecentSession) => {
+    if (session.status === 'ongoing') {
+      navigate('/take-attendance');
+    } else if (session.status === 'completed') {
+      navigate('/records');
+    } else {
+      navigate('/schedule');
+    }
   };
+
+
 
   const getGreeting = () => {
     const hour = new Date().getHours();
@@ -185,6 +327,11 @@ const Dashboard = () => {
   };
 
   const getUserDisplayName = () => {
+    // Don't show email while profile is still loading
+    if (loading && !userProfile) {
+      return '';
+    }
+    
     if (userProfile?.first_name && userProfile?.last_name) {
       return `${userProfile.first_name} ${userProfile.last_name}`;
     }
@@ -212,100 +359,130 @@ const Dashboard = () => {
   }, [chartData]);
 
   return (
-    <div className="flex-1 space-y-4 p-3 opacity-100 transition-opacity duration-300">
+    <div className="flex-1 space-y-4 px-6 py-4 opacity-100 transition-opacity duration-300">
+      {/* Header Section */}
       <div className="flex items-center justify-between">
         <div className="space-y-1">
-          <h2 className="text-2xl font-bold tracking-tight text-education-navy">{getDashboardTitle()}</h2>
-          <p className="text-sm text-muted-foreground">
-            {getGreeting()}, {getUserDisplayName()}! Here's your attendance overview.
+          <h2 className="text-2xl font-bold tracking-tight text-gray-900">{getDashboardTitle()}</h2>
+          <p className="text-sm text-gray-600">
+            {getGreeting()}! Here's your attendance overview.
           </p>
         </div>
-        <div className="flex items-center space-x-2">
-          <Button 
-            onClick={handleViewCalendar}
-            className="bg-gradient-primary shadow-glow h-9 px-4"
-          >
-            <Calendar className="mr-2 h-4 w-4" />
-            View Calendar
-          </Button>
-        </div>
       </div>
       
-      <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-4">
-        <Card className="bg-gradient-card border-0 shadow-card hover:shadow-md transition-shadow">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 px-6 pt-4">
-            <CardTitle className="text-sm font-medium text-education-navy">Total Students</CardTitle>
-            <Users className="h-4 w-4 text-primary flex-shrink-0" />
-          </CardHeader>
-          <CardContent className="pt-1 px-6 pb-4">
-            <div className="text-2xl font-bold text-education-navy">
-              {loading ? '...' : totalStudents.toLocaleString()}
+      {/* Enhanced Stats Cards */}
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
+        <Card className="bg-gradient-to-br from-blue-50 to-blue-100 border-0 shadow-sm hover:shadow-md transition-all duration-200 group">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3 px-6 pt-6">
+            <CardTitle className="text-sm font-medium text-blue-700">Total Students</CardTitle>
+            <div className="p-2 bg-blue-200 rounded-lg group-hover:bg-blue-300 transition-colors">
+              <Users className="h-4 w-4 text-blue-800" />
             </div>
-            <p className="text-xs text-muted-foreground mt-1">
-              Enrolled students
-            </p>
+          </CardHeader>
+          <CardContent className="pt-0 px-6 pb-6">
+            <div className="text-3xl font-bold text-blue-900 mb-1">
+              {loading ? '' : totalStudents.toLocaleString()}
+            </div>
+            <div className="flex items-center text-sm text-blue-700">
+              <TrendingUp className="h-3 w-3 mr-1" />
+              +5.2% this month
+            </div>
           </CardContent>
         </Card>
         
-        <Card className="bg-gradient-card border-0 shadow-card hover:shadow-md transition-shadow">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 px-6 pt-4">
-            <CardTitle className="text-sm font-medium text-education-navy">Today's Sessions</CardTitle>
-            <CalendarDays className="h-4 w-4 text-accent flex-shrink-0" />
+        <Card className="bg-gradient-to-br from-purple-50 to-purple-100 border-0 shadow-sm hover:shadow-md transition-all duration-200 group">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3 px-6 pt-6">
+            <CardTitle className="text-sm font-medium text-purple-700">Today's Attendance</CardTitle>
+            <div className="p-2 bg-purple-200 rounded-lg group-hover:bg-purple-300 transition-colors">
+              <Activity className="h-4 w-4 text-purple-800" />
+            </div>
           </CardHeader>
-          <CardContent className="pt-1 px-6 pb-4">
-            <div className="text-2xl font-bold text-education-navy">8</div>
-            <p className="text-xs text-muted-foreground mt-1">
-              +2 from yesterday
-            </p>
+          <CardContent className="pt-0 px-6 pb-6">
+            <div className="text-3xl font-bold text-purple-900 mb-1">
+              {realTimeStats.todayAttendance.toLocaleString()}
+            </div>
+            <div className="flex items-center text-sm text-purple-700">
+              <Target className="h-3 w-3 mr-1" />
+              {realTimeStats.todaySessions} sessions today
+            </div>
           </CardContent>
         </Card>
         
-        <Card className="bg-gradient-card border-0 shadow-card hover:shadow-md transition-shadow">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 px-6 pt-4">
-            <CardTitle className="text-sm font-medium text-education-navy">Attendance Rate</CardTitle>
-            <TrendingUp className="h-4 w-4 text-education-green flex-shrink-0" />
+        <Card className="bg-gradient-to-br from-green-50 to-green-100 border-0 shadow-sm hover:shadow-md transition-all duration-200 group">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3 px-6 pt-6">
+            <CardTitle className="text-sm font-medium text-green-700">Attendance Rate</CardTitle>
+            <div className="p-2 bg-green-200 rounded-lg group-hover:bg-green-300 transition-colors">
+              <CheckCircle2 className="h-4 w-4 text-green-800" />
+            </div>
           </CardHeader>
-          <CardContent className="pt-1 px-6 pb-4">
-            <div className="text-2xl font-bold text-education-navy">94.2%</div>
-            <p className="text-xs text-muted-foreground mt-1">
+          <CardContent className="pt-0 px-6 pb-6">
+            <div className="text-3xl font-bold text-green-900 mb-1">94.2%</div>
+            <div className="flex items-center text-sm text-green-700">
+              <TrendingUp className="h-3 w-3 mr-1" />
               +1.2% from last week
-            </p>
+            </div>
           </CardContent>
         </Card>
         
-        <Card className="bg-gradient-card border-0 shadow-card hover:shadow-md transition-shadow">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 px-6 pt-4">
-            <CardTitle className="text-sm font-medium text-education-navy">Active Classes</CardTitle>
-            <BookOpen className="h-4 w-4 text-orange-500 flex-shrink-0" />
+        <Card className="bg-gradient-to-br from-orange-50 to-orange-100 border-0 shadow-sm hover:shadow-md transition-all duration-200 group">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3 px-6 pt-6">
+            <CardTitle className="text-sm font-medium text-orange-700">Active Classes</CardTitle>
+            <div className="p-2 bg-orange-200 rounded-lg group-hover:bg-orange-300 transition-colors">
+              <BookOpen className="h-4 w-4 text-orange-800" />
+            </div>
           </CardHeader>
-          <CardContent className="pt-1 px-6 pb-4">
-            <div className="text-2xl font-bold text-education-navy">24</div>
-            <p className="text-xs text-muted-foreground mt-1">
-              Across all programs
-            </p>
+          <CardContent className="pt-0 px-6 pb-6">
+            <div className="text-3xl font-bold text-orange-900 mb-1">
+              {realTimeStats.activeClasses}
+            </div>
+            <div className="flex items-center text-sm text-orange-700">
+              <AlertCircle className="h-3 w-3 mr-1" />
+              {realTimeStats.pendingExcuses} pending excuses
+            </div>
+          </CardContent>
+        </Card>
+        
+        <Card className="bg-gradient-to-br from-indigo-50 to-indigo-100 border-0 shadow-sm hover:shadow-md transition-all duration-200 group">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3 px-6 pt-6">
+            <CardTitle className="text-sm font-medium text-indigo-700">Academic Year</CardTitle>
+            <div className="p-2 bg-indigo-200 rounded-lg group-hover:bg-indigo-300 transition-colors">
+              <Calendar className="h-4 w-4 text-indigo-800" />
+            </div>
+          </CardHeader>
+          <CardContent className="pt-0 px-6 pb-6">
+            <div className="text-2xl font-bold text-indigo-900 mb-1">
+              {academicYear?.year || '2024-2025'}
+            </div>
+            <div className="flex items-center text-sm text-indigo-700">
+              <CalendarDays className="h-3 w-3 mr-1" />
+              {academicYear?.semester || 'First Semester'}
+            </div>
           </CardContent>
         </Card>
       </div>
       
-      <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-7">
-        <Card className="col-span-4 bg-gradient-card border-0 shadow-card">
-          <CardHeader className="pb-3">
+
+
+      {/* Chart and Recent Sessions Section */}
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
+        <Card className="col-span-4 bg-white border-0 shadow-sm">
+          <CardHeader className="pb-4">
             <div className="flex justify-between items-start">
-              <div className="pt-1">
-                <CardTitle className="text-education-navy">Attendance Overview</CardTitle>
-                <CardDescription>
+              <div>
+                <CardTitle className="text-xl font-semibold text-gray-900">Attendance Overview</CardTitle>
+                <CardDescription className="text-gray-600 mt-1">
                   {timePeriod === 'daily' ? 'Daily' : timePeriod === 'weekly' ? 'Weekly' : 'Monthly'} attendance trends
                 </CardDescription>
               </div>
-              <div className="flex space-x-1 bg-muted p-1 rounded-lg">
+              <div className="flex space-x-1 bg-gray-100 p-1 rounded-lg">
                 {(['daily', 'weekly', 'monthly'] as const).map((period) => (
                   <button
                     key={period}
                     onClick={() => setTimePeriod(period)}
-                    className={`px-3 py-1 text-sm rounded-md transition-colors ${
+                    className={`px-4 py-2 text-sm rounded-md transition-colors font-medium ${
                       timePeriod === period
-                        ? 'bg-white text-education-navy shadow-sm'
-                        : 'text-muted-foreground hover:text-foreground'
+                        ? 'bg-white text-gray-900 shadow-sm'
+                        : 'text-gray-600 hover:text-gray-900'
                     }`}
                   >
                     {period.charAt(0).toUpperCase() + period.slice(1)}
@@ -396,101 +573,81 @@ const Dashboard = () => {
           </CardContent>
         </Card>
 
-        <Card className="col-span-3 bg-gradient-card border-0 shadow-card">
+        {/* Recent Attendance Sessions */}
+        <Card className="col-span-3 bg-white border-0 shadow-sm">
           <CardHeader className="pb-3">
-            <CardTitle className="text-education-navy">Recent Activity</CardTitle>
-            <CardDescription>
-              Latest attendance activities and updates
-            </CardDescription>
+            <div className="flex justify-between items-center">
+              <div>
+                <CardTitle className="text-lg font-semibold text-gray-900">Recent Sessions</CardTitle>
+                <CardDescription className="text-gray-600">
+                  Latest attendance activities
+                </CardDescription>
+              </div>
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => navigate('/records')}
+                className="h-8 px-3 text-xs"
+              >
+                View All
+              </Button>
+            </div>
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
-              <div className="flex items-center p-2 rounded-lg hover:bg-muted/50 transition-colors">
-                <CheckCircle2 className="mr-3 h-4 w-4 text-green-500" />
-                <div className="flex-1 space-y-0.5">
-                  <p className="text-sm font-medium leading-none">
-                    CS 101 - Introduction to Programming
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    Attendance taken for 45 students
-                  </p>
+              {recentSessions.length > 0 ? (
+                recentSessions.map((session, index) => (
+                  <div 
+                    key={index}
+                    className="flex items-center p-3 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer border border-transparent hover:border-gray-200"
+                    onClick={() => handleSessionClick(session)}
+                  >
+                    <div className={`p-2 rounded-lg mr-3 ${
+                      session.status === 'completed' ? 'bg-green-100' : 
+                      session.status === 'ongoing' ? 'bg-blue-100' : 'bg-orange-100'
+                    }`}>
+                      {session.status === 'completed' ? (
+                        <CheckCircle2 className="h-4 w-4 text-green-700" />
+                      ) : session.status === 'ongoing' ? (
+                        <Clock className="h-4 w-4 text-blue-700" />
+                      ) : (
+                        <CalendarDays className="h-4 w-4 text-orange-700" />
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-gray-900 truncate">
+                        {session.course}
+                      </p>
+                      <div className="flex items-center gap-2 mt-1">
+                        <p className="text-xs text-gray-500">
+                          {session.students} students • {session.time}
+                        </p>
+                        {session.attendanceRate && (
+                          <Badge variant="secondary" className="text-xs px-2 py-0.5">
+                            {session.attendanceRate}% attendance
+                          </Badge>
+                        )}
+                      </div>
+                    </div>
+                    <div className="text-xs text-gray-400 ml-2 text-right">
+                      <div>{session.timeAgo}</div>
+                      {session.status === 'ongoing' && (
+                        <Badge className="bg-blue-100 text-blue-700 text-xs mt-1">
+                          Live
+                        </Badge>
+                      )}
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="text-center py-8">
+                  <div className="p-3 bg-gray-50 rounded-lg inline-block mb-3">
+                    <CalendarDays className="h-6 w-6 text-gray-400" />
+                  </div>
+                  <p className="text-sm text-gray-500">No recent sessions</p>
+                  <p className="text-xs text-gray-400 mt-1">Attendance sessions will appear here</p>
                 </div>
-                <div className="text-xs text-muted-foreground">2 min ago</div>
-              </div>
-              
-              <div className="flex items-center p-2 rounded-lg hover:bg-muted/50 transition-colors">
-                <Clock className="mr-3 h-4 w-4 text-orange-500" />
-                <div className="flex-1 space-y-0.5">
-                  <p className="text-sm font-medium leading-none">
-                    MATH 201 - Calculus II
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    Session starting in 15 minutes
-                  </p>
-                </div>
-                <div className="text-xs text-muted-foreground">upcoming</div>
-              </div>
-              
-              <div className="flex items-center p-2 rounded-lg hover:bg-muted/50 transition-colors">
-                <BarChart3 className="mr-3 h-4 w-4 text-blue-500" />
-                <div className="flex-1 space-y-0.5">
-                  <p className="text-sm font-medium leading-none">
-                    Weekly Report Generated
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    Attendance summary for Nov 11-17
-                  </p>
-                </div>
-                <div className="text-xs text-muted-foreground">1 hour ago</div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        
-        <Card className="col-span-3 bg-gradient-card border-0 shadow-card">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-education-navy">Quick Actions</CardTitle>
-            <CardDescription>
-              Common tasks and shortcuts
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2">
-              <Button 
-                className="w-full justify-start h-9 hover:bg-muted hover:text-foreground transition-colors"
-                variant="outline"
-                onClick={() => navigate('/take-attendance')}
-              >
-                <Clock className="mr-2 h-4 w-4" />
-                Take Attendance
-              </Button>
-              
-              <Button 
-                className="w-full justify-start h-9 hover:bg-muted hover:text-foreground transition-colors"
-                variant="outline"
-                onClick={() => navigate('/students')}
-              >
-                <Users className="mr-2 h-4 w-4" />
-                Manage Students
-              </Button>
-              
-              <Button 
-                className="w-full justify-start h-9 hover:bg-muted hover:text-foreground transition-colors"
-                variant="outline"
-                onClick={() => navigate('/schedule')}
-              >
-                <CalendarDays className="mr-2 h-4 w-4" />
-                View Schedule
-              </Button>
-              
-              <Button 
-                className="w-full justify-start h-9 hover:bg-muted hover:text-foreground transition-colors"
-                variant="outline"
-                onClick={() => navigate('/records')}
-              >
-                <BarChart3 className="mr-2 h-4 w-4" />
-                View Reports
-              </Button>
+              )}
             </div>
           </CardContent>
         </Card>

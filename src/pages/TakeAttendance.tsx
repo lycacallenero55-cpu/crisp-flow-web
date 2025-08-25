@@ -266,7 +266,7 @@ const TakeAttendanceContent: React.FC = () => {
   }
 
   return (
-    <div className="flex-1 flex flex-col space-y-4 p-3">
+    <div className="flex-1 flex flex-col space-y-4 px-6 py-4">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Take Attendance</h1>

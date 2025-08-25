@@ -129,3 +129,31 @@ All colors MUST be HSL.
     @apply bg-background text-foreground;
   }
 }
+
+@layer utilities {
+  @keyframes slide-in {
+    from {
+      transform: translateX(-100%);
+    }
+    to {
+      transform: translateX(0);
+    }
+  }
+
+  @keyframes slide-out {
+    from {
+      transform: translateX(0);
+    }
+    to {
+      transform: translateX(-100%);
+    }
+  }
+
+  .animate-slide-in {
+    animation: slide-in 300ms ease-in-out forwards;
+  }
+
+  .animate-slide-out {
+    animation: slide-out 300ms ease-in-out forwards;
+  }
+}

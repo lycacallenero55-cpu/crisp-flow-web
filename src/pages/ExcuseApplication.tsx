@@ -9,8 +9,7 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from "
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
-import { DataTable } from "@/components/ui/data-table";
-import { ColumnDef } from "@tanstack/react-table";
+
 import { FileText, Clock, AlertCircle, CheckCircle2, Plus, Search, Filter, Eye, Check, X, ChevronsUpDown, CalendarIcon, Edit, ZoomIn, ZoomOut, Trash2 } from "lucide-react";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
@@ -80,7 +79,7 @@ const ExcuseApplicationContent = () => {
   const [isEditMode, setIsEditMode] = useState(false);
   const [viewMode, setViewMode] = useState<'view' | 'edit'>('view');
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<string | number | null>(null);
 
   useEffect(() => {
     fetchExcuses();
@@ -178,24 +177,48 @@ const ExcuseApplicationContent = () => {
         excuse_image_url = publicUrl;
       }
 
-      const { error } = await supabase
-        .from('excuse_applications')
-        .insert([{
-          student_id: parseInt(formData.student_id),
-          session_id: formData.session_id ? parseInt(formData.session_id) : null,
-          absence_date: new Date().toISOString().split('T')[0], // Use current date
-          documentation_url: excuse_image_url || formData.documentation_url,
-          status: 'pending'
-        }]);
+      if (isEditMode && selectedExcuse) {
+        // Update existing excuse
+        const { error } = await supabase
+          .from('excuse_applications')
+          .update({
+            student_id: parseInt(formData.student_id),
+            session_id: formData.session_id ? parseInt(formData.session_id) : null,
+            absence_date: formData.absence_date,
+            documentation_url: excuse_image_url || formData.documentation_url,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', selectedExcuse.id);
 
-      if (error) throw error;
+        if (error) throw error;
 
-      toast({
-        title: "Success",
-        description: "Excuse application submitted successfully",
-      });
+        toast({
+          title: "Success",
+          description: "Excuse application updated successfully",
+        });
+      } else {
+        // Create new excuse
+        const { error } = await supabase
+          .from('excuse_applications')
+          .insert([{
+            student_id: parseInt(formData.student_id),
+            session_id: formData.session_id ? parseInt(formData.session_id) : null,
+            absence_date: formData.absence_date || new Date().toISOString().split('T')[0],
+            documentation_url: excuse_image_url || formData.documentation_url,
+            status: 'pending'
+          }]);
+
+        if (error) throw error;
+
+        toast({
+          title: "Success",
+          description: "Excuse application submitted successfully",
+        });
+      }
 
       setIsFormOpen(false);
+      setIsEditMode(false);
+      setSelectedExcuse(null);
       setFormData({
         student_id: '',
         absence_date: '',
@@ -205,7 +228,7 @@ const ExcuseApplicationContent = () => {
       console.error('Error submitting excuse:', error);
       toast({
         title: "Error",
-        description: "Failed to submit excuse application",
+        description: isEditMode ? "Failed to update excuse application" : "Failed to submit excuse application",
         variant: "destructive",
       });
     }
@@ -241,21 +264,74 @@ const ExcuseApplicationContent = () => {
     }
   };
 
-  const handleDeleteExcuse = async (id: string) => {
+  const handleDeleteExcuse = async (id: string | number) => {
     try {
-      const { error } = await supabase
+      console.log('Deleting excuse with ID:', id, 'Type:', typeof id);
+      
+      // First, let's check what the actual ID looks like in the database
+      const { data: checkData, error: checkError } = await supabase
+        .from('excuse_applications')
+        .select('id')
+        .limit(1);
+      
+      if (checkError) {
+        console.error('Error checking ID format:', checkError);
+      } else {
+        console.log('Sample ID from database:', checkData?.[0]?.id, 'Type:', typeof checkData?.[0]?.id);
+      }
+      
+      // Try the delete operation
+      const { error, count } = await supabase
         .from('excuse_applications')
         .delete()
         .eq('id', id);
 
-      if (error) throw error;
+      console.log('Delete result - Error:', error, 'Count:', count);
+      
+      // Also try to fetch the record to see if it exists
+      const { data: checkRecord, error: checkRecordError } = await supabase
+        .from('excuse_applications')
+        .select('*')
+        .eq('id', id)
+        .single();
+      
+      console.log('Record check - Data:', checkRecord, 'Error:', checkRecordError);
 
+      if (error) {
+        console.error('Supabase delete error:', error);
+        throw error;
+      }
+
+      if (count === 0) {
+        console.log('No records were deleted, trying alternative approach...');
+        
+        // Try alternative delete approach
+        const { error: altError, count: altCount } = await supabase
+          .from('excuse_applications')
+          .delete()
+          .eq('id', parseInt(id.toString()));
+        
+        console.log('Alternative delete result - Error:', altError, 'Count:', altCount);
+        
+        if (altCount === 0) {
+          toast({
+            title: "Warning",
+            description: "No record found to delete",
+            variant: "destructive",
+          });
+          return;
+        }
+      }
+
+      console.log('Delete successful, refreshing list...');
+      
       toast({
         title: "Success",
         description: "Excuse application deleted successfully",
       });
 
-      fetchExcuses();
+      // Refresh the list immediately
+      await fetchExcuses();
       setShowDeleteConfirm(false);
       setDeleteTarget(null);
     } catch (error) {
@@ -277,15 +353,26 @@ const ExcuseApplicationContent = () => {
 
   const handleImageMouseMove = (e: React.MouseEvent) => {
     if (isDragging && imageZoom > 1) {
+      // Add drag sensitivity control - reduce movement by dividing by zoom level
+      const sensitivity = 1 / imageZoom;
       setImagePan({
-        x: e.clientX - dragStart.x,
-        y: e.clientY - dragStart.y
+        x: (e.clientX - dragStart.x) * sensitivity,
+        y: (e.clientY - dragStart.y) * sensitivity
       });
     }
   };
 
   const handleImageMouseUp = () => {
     setIsDragging(false);
+  };
+
+  // Reset pan position when zoom changes
+  const handleZoomChange = (newZoom: number) => {
+    setImageZoom(newZoom);
+    // Reset pan position when zoom returns to 100% or below
+    if (newZoom <= 1) {
+      setImagePan({ x: 0, y: 0 });
+    }
   };
 
   const getStatusBadge = (status: ExcuseStatus) => {
@@ -314,181 +401,163 @@ const ExcuseApplicationContent = () => {
     }
   };
 
-  const columns: ColumnDef<ExcuseApplication>[] = [
-    {
-      accessorKey: "studentName",
-      header: "Student",
-      accessorFn: (row) => `${row.students?.firstname || ''} ${row.students?.surname || ''}`.trim(),
-      cell: ({ row }) => {
-        const student = row.original.students;
-        return (
-          <div>
-            <div className="font-medium">
-              {student?.firstname || 'Unknown'} {student?.surname || 'Student'}
-            </div>
-            <div className="text-sm text-muted-foreground">
-              {student?.student_id || 'N/A'} • {student?.program || 'N/A'}
-            </div>
-          </div>
-        );
-      },
-    },
-    {
-      accessorKey: "absence_date",
-      header: "Absence Date",
-      cell: ({ row }) => {
-        return format(new Date(row.getValue("absence_date")), 'MMM d, yyyy');
-      },
-    },
-    {
-      accessorKey: "documentation_url",
-      header: "Excuse Letter",
-      cell: ({ row }) => {
-        const imageUrl = row.original.documentation_url;
-        return (
-          <div className="flex items-center gap-2">
-            {imageUrl ? (
-              <div className="flex items-center gap-2">
-                <img 
-                  src={imageUrl} 
-                  alt="Excuse letter" 
-                  className="w-8 h-8 rounded object-cover cursor-pointer"
-                  onClick={() => window.open(imageUrl, '_blank')}
-                />
-              </div>
-            ) : (
-              <span className="text-gray-400 text-sm">No image</span>
-            )}
-          </div>
-        );
-      },
-    },
-    {
-      accessorKey: "status",
-      header: "Status",
-      cell: ({ row }) => {
-        return getStatusBadge(row.getValue("status"));
-      },
-    },
-    {
-      accessorKey: "created_at",
-      header: "Submitted",
-      cell: ({ row }) => {
-        return format(new Date(row.getValue("created_at")), 'MMM d, yyyy');
-      },
-    },
-    {
-      id: "actions",
-      header: "Actions",
-      cell: ({ row }) => {
-        const excuse = row.original;
-        return (
-          <div className="flex gap-1 justify-end">
-            <Button
-              variant="outline"
-              size="sm"
-              className="h-8 w-8 p-0"
-              onClick={() => {
-                setSelectedExcuse(excuse);
-                setViewMode('view');
-                setIsViewOpen(true);
-              }}
-              title="View Excuse"
-            >
-              <Eye className="h-4 w-4" />
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              className="h-8 w-8 p-0"
-              onClick={() => {
-                setSelectedExcuse(excuse);
-                setViewMode('edit');
-                setIsFormOpen(true);
-              }}
-              title="Edit Excuse"
-            >
-              <Edit className="h-4 w-4" />
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              className="h-8 w-8 p-0 text-destructive hover:text-destructive"
-              onClick={() => {
-                setDeleteTarget(excuse.id);
-                setShowDeleteConfirm(true);
-              }}
-              title="Delete Excuse"
-            >
-              <Trash2 className="h-4 w-4" />
-            </Button>
-          </div>
-        );
-      },
-    },
-  ];
-
-  const filterOptions = [
-    {
-      label: "Status",
-      value: "status",
-      options: [
-        { label: "All Statuses", value: "all" },
-        { label: "Pending", value: "pending" },
-        { label: "Approved", value: "approved" },
-        { label: "Rejected", value: "rejected" },
-      ],
-    },
-  ];
-
   return (
-    <div className="flex-1 space-y-4 p-3 sm:p-4 w-full max-w-full">
-      <div className="flex flex-col space-y-3 sm:flex-row sm:items-start sm:justify-between sm:space-y-0">
-        <div className="space-y-1">
-          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Excuse Applications</h1>
-          <p className="text-sm text-muted-foreground">
+    <div className="flex-1 space-y-4 px-6 py-4">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Excuse Applications</h1>
+          <p className="text-muted-foreground">
             Review and manage student excuse applications for absences
           </p>
         </div>
         <Button 
-          className="bg-gradient-primary shadow-glow h-9 w-full sm:w-auto mt-2 sm:mt-0"
-          onClick={() => {
-            setIsFormOpen(true);
-            setViewMode('edit');
-            setSelectedExcuse(null);
-          }}
+          className="bg-gradient-primary shadow-glow h-9"
+          onClick={() => setIsFormOpen(true)}
         >
           <Plus className="w-4 h-4 mr-2" />
           New Application
         </Button>
       </div>
 
-      <Card className="w-full overflow-hidden">
-        <CardHeader>
-          <CardTitle className="text-lg flex items-center gap-2">
-            <FileText className="h-5 w-5" />
-            All Applications
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="p-0 sm:p-4 w-full">
-          <div className="relative w-full overflow-hidden">
-            {loading ? (
-              <div className="w-full min-w-[1200px] h-32 flex items-center justify-center">
-                <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary"></div>
-              </div>
-            ) : (
-              <div className="w-full overflow-x-auto">
-                <DataTable
-                  columns={columns}
-                  data={excuses}
-                  searchKey="studentName"
-                  filterOptions={filterOptions}
-                />
-              </div>
-            )}
+      {/* Filter and Search Section */}
+      <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
+        <div className="flex gap-2">
+          <Select defaultValue="all" onValueChange={(value) => {
+            // Filter logic would go here
+          }}>
+            <SelectTrigger className="w-[180px]">
+              <SelectValue placeholder="Filter by status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Statuses</SelectItem>
+              <SelectItem value="pending">Pending</SelectItem>
+              <SelectItem value="approved">Approved</SelectItem>
+              <SelectItem value="rejected">Rejected</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="relative w-full sm:w-64">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+          <Input
+            placeholder="Search applications..."
+            className="pl-10"
+            onChange={(e) => {
+              // Search logic would go here
+            }}
+          />
+        </div>
+      </div>
+
+      {/* Applications Grid */}
+      {loading ? (
+        <div className="flex items-center justify-center h-64">
+          <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary"></div>
+        </div>
+      ) : excuses.length > 0 ? (
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          {excuses.map((excuse) => (
+            <Card key={excuse.id} className="hover:shadow-md transition-shadow">
+              <CardHeader className="pb-3">
+                <div className="flex items-start justify-between">
+                  <div className="flex-1 min-w-0">
+                    <CardTitle className="text-base font-semibold text-gray-900 truncate">
+                      {excuse.students?.firstname} {excuse.students?.surname}
+                    </CardTitle>
+                    <p className="text-sm text-gray-500 mt-1">
+                      {excuse.students?.student_id} • {excuse.students?.program}
+                    </p>
+                  </div>
+                  <div className="ml-2">
+                    {getStatusBadge(excuse.status)}
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent className="pt-0">
+                <div className="space-y-3">
+                  <div className="flex items-center text-sm text-gray-600">
+                    <CalendarIcon className="h-4 w-4 mr-2 text-gray-400" />
+                    {format(new Date(excuse.absence_date), 'MMM d, yyyy')}
+                  </div>
+                  
+                  {excuse.documentation_url && (
+                    <div className="flex items-center text-sm text-gray-600">
+                      <FileText className="h-4 w-4 mr-2 text-gray-400" />
+                      <span className="truncate">Documentation attached</span>
+                    </div>
+                  )}
+                  
+                  <div className="flex items-center text-sm text-gray-600">
+                    <Clock className="h-4 w-4 mr-2 text-gray-400" />
+                    Submitted {format(new Date(excuse.created_at), 'MMM d, yyyy')}
+                  </div>
+                  
+                  <div className="flex gap-2 pt-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="flex-1 h-8"
+                      onClick={() => {
+                        setSelectedExcuse(excuse);
+                        setViewMode('view');
+                        setIsViewOpen(true);
+                      }}
+                    >
+                      <Eye className="h-3 w-3 mr-1" />
+                      View
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="flex-1 h-8"
+                      onClick={() => {
+                        setSelectedExcuse(excuse);
+                        setViewMode('edit');
+                        setIsEditMode(true);
+                        setFormData({
+                          student_id: excuse.student_id?.toString() || '',
+                          session_id: excuse.session_id?.toString() || '',
+                          absence_date: excuse.absence_date || '',
+                          documentation_url: excuse.documentation_url || ''
+                        });
+                        setIsFormOpen(true);
+                      }}
+                    >
+                      <Edit className="h-3 w-3 mr-1" />
+                      Edit
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-8 w-8 p-0"
+                      onClick={() => {
+                        setDeleteTarget(excuse.id);
+                        setShowDeleteConfirm(true);
+                      }}
+                    >
+                      <Trash2 className="h-3 w-3" />
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      ) : (
+        <Card className="text-center py-12">
+          <div className="flex flex-col items-center">
+            <FileText className="h-12 w-12 text-gray-400 mb-4" />
+            <h3 className="text-lg font-medium text-gray-900 mb-2">No excuse applications</h3>
+            <p className="text-gray-500 mb-4">Get started by creating a new excuse application.</p>
+            <Button 
+              onClick={() => setIsFormOpen(true)}
+              className="bg-gradient-primary shadow-glow"
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              New Application
+            </Button>
           </div>
-        </CardContent>
-      </Card>
+        </Card>
+      )}
 
       {/* Form Dialog */}
       <Dialog open={isFormOpen} onOpenChange={(open) => {
@@ -496,7 +565,12 @@ const ExcuseApplicationContent = () => {
         if (!open) {
           setIsEditMode(false);
           setSelectedExcuse(null);
-          setFormData({ student_id: '', absence_date: '' });
+          setFormData({ 
+            student_id: '', 
+            session_id: '',
+            absence_date: '',
+            documentation_url: ''
+          });
         }
       }}>
         <DialogContent className="max-w-md">
@@ -523,7 +597,7 @@ const ExcuseApplicationContent = () => {
                     <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                   </Button>
                 </PopoverTrigger>
-                <PopoverContent className="w-full p-0">
+                <PopoverContent className="w-full p-0 z-[100]">
                   <Command>
                     <CommandInput placeholder="Search students..." />
                     <CommandEmpty>No student found.</CommandEmpty>
@@ -570,7 +644,7 @@ const ExcuseApplicationContent = () => {
                     </div>
                   </Button>
                 </PopoverTrigger>
-                <PopoverContent className="w-full p-0">
+                <PopoverContent className="w-full p-0 z-[100]">
                   <Command>
                     <CommandInput placeholder="Search sessions or dates..." />
                     <CommandEmpty>No session found.</CommandEmpty>
@@ -727,7 +801,7 @@ const ExcuseApplicationContent = () => {
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => setImageZoom(Math.max(0.5, imageZoom - 0.25))}
+                        onClick={() => handleZoomChange(Math.max(0.5, imageZoom - 0.25))}
                       >
                         <ZoomOut className="h-4 w-4" />
                       </Button>
@@ -735,9 +809,17 @@ const ExcuseApplicationContent = () => {
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => setImageZoom(Math.min(3, imageZoom + 0.25))}
+                        onClick={() => handleZoomChange(Math.min(3, imageZoom + 0.25))}
                       >
                         <ZoomIn className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleZoomChange(1)}
+                        className="ml-2"
+                      >
+                        Reset
                       </Button>
                     </div>
                   )}

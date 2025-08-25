@@ -103,7 +103,7 @@ const Records = () => {
   return (
     <Layout>
       <PageWrapper skeletonType="table">
-        <div className="p-2 sm:p-3 space-y-4 overflow-x-hidden">
+        <div className="px-6 py-4 space-y-4">
         {/* Header */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
           <div>
@@ -121,9 +121,9 @@ const Records = () => {
         {/* Filters */}
         <Card className="bg-gradient-card border-0 shadow-card">
           <CardContent className="p-4">
-            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
-              <div className="w-full sm:w-auto flex-1 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
-                <div className="relative w-full">
+            <div className="flex items-center justify-between gap-4">
+              <div className="flex flex-1 items-center gap-3">
+                <div className="relative min-w-[280px] max-w-[400px]">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
                   <Input 
                     placeholder="Search records..." 
@@ -131,7 +131,7 @@ const Records = () => {
                   />
                 </div>
                 <Select>
-                  <SelectTrigger className="h-10 w-full sm:min-w-[140px] border-border hover:bg-muted/80 transition-colors duration-200">
+                  <SelectTrigger className="h-10 min-w-[140px] border-border hover:bg-muted/80 transition-colors duration-200">
                     <SelectValue placeholder="Filter by type" />
                   </SelectTrigger>
                   <SelectContent className="bg-popover border-border shadow-elegant">
@@ -142,7 +142,7 @@ const Records = () => {
                   </SelectContent>
                 </Select>
                 <Select>
-                  <SelectTrigger className="h-10 w-full sm:min-w-[140px] border-border hover:bg-muted/80 transition-colors duration-200">
+                  <SelectTrigger className="h-10 min-w-[140px] border-border hover:bg-muted/80 transition-colors duration-200">
                     <SelectValue placeholder="Program" />
                   </SelectTrigger>
                   <SelectContent className="bg-popover border-border shadow-elegant">
@@ -154,7 +154,7 @@ const Records = () => {
                   </SelectContent>
                 </Select>
                 <Select>
-                  <SelectTrigger className="h-10 w-full sm:min-w-[140px] border-border hover:bg-muted/80 transition-colors duration-200">
+                  <SelectTrigger className="h-10 min-w-[140px] border-border hover:bg-muted/80 transition-colors duration-200">
                     <SelectValue placeholder="Date range" />
                   </SelectTrigger>
                   <SelectContent className="bg-popover border-border shadow-elegant">
@@ -174,57 +174,55 @@ const Records = () => {
           {mockRecords.map((record) => (
             <Card key={record.id} className="bg-gradient-card border-0 shadow-card hover:shadow-elegant transition-all duration-300">
               <CardContent className="p-4">
-                <div className="flex flex-col w-full">
-                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 w-full">
-                    <div className="flex items-center gap-3">
-                      <div className="p-2 rounded-lg bg-gradient-primary/10">
-                        {getTypeIcon(record.type)}
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 rounded-lg bg-gradient-primary/10">
+                      {getTypeIcon(record.type)}
+                    </div>
+                    <div>
+                      <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
+                        <h3 className="text-sm font-semibold text-education-navy">{record.title}</h3>
+                        {getTypeBadge(record.type)}
                       </div>
-                      <div>
-                        <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
-                          <h3 className="text-sm font-semibold text-education-navy">{record.title}</h3>
-                          {getTypeBadge(record.type)}
-                        </div>
-                        <p className="text-xs text-muted-foreground">
-                          {record.program} • {record.date} • {record.timeIn} - {record.timeOut}
-                        </p>
+                      <p className="text-xs text-muted-foreground">
+                        {record.program} • {record.date} • {record.timeIn} - {record.timeOut}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex flex-wrap items-center gap-4 sm:gap-6">
+                    <div className="text-center">
+                      <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                        <Users className="w-3.5 h-3.5" />
+                        <span>Students</span>
+                      </div>
+                      <div className="text-sm font-bold text-education-navy">{record.totalStudents}</div>
+                    </div>
+
+                    <div className="text-center">
+                      <div className="text-xs text-muted-foreground">Present</div>
+                      <div className="text-sm font-bold text-accent">{record.present}</div>
+                    </div>
+
+                    <div className="text-center">
+                      <div className="text-xs text-muted-foreground">Absent</div>
+                      <div className="text-sm font-bold text-destructive">{record.absent}</div>
+                    </div>
+
+                    <div className="text-center">
+                      <div className="text-xs text-muted-foreground">Rate</div>
+                      <div className={`text-sm font-bold ${getAttendanceColor(record.attendanceRate)}`}>
+                        {record.attendanceRate}%
                       </div>
                     </div>
 
-                    <div className="flex flex-wrap items-center gap-3 sm:gap-6 mt-3 sm:mt-0 sm:ml-auto">
-                      <div className="text-center">
-                        <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                          <Users className="w-3.5 h-3.5" />
-                          <span>Students</span>
-                        </div>
-                        <div className="text-sm font-bold text-education-navy">{record.totalStudents}</div>
-                      </div>
-
-                      <div className="text-center">
-                        <div className="text-xs text-muted-foreground">Present</div>
-                        <div className="text-sm font-bold text-accent">{record.present}</div>
-                      </div>
-
-                      <div className="text-center">
-                        <div className="text-xs text-muted-foreground">Absent</div>
-                        <div className="text-sm font-bold text-destructive">{record.absent}</div>
-                      </div>
-
-                      <div className="text-center">
-                        <div className="text-xs text-muted-foreground">Rate</div>
-                        <div className={`text-sm font-bold ${getAttendanceColor(record.attendanceRate)}`}>
-                          {record.attendanceRate}%
-                        </div>
-                      </div>
-
-                      <div className="flex gap-1">
-                        <Button variant="outline" size="sm" className="h-8 w-8 p-0">
-                          <Eye className="w-3.5 h-3.5" />
-                        </Button>
-                        <Button variant="outline" size="sm" className="h-8 w-8 p-0">
-                          <Download className="w-3.5 h-3.5" />
-                        </Button>
-                      </div>
+                    <div className="flex gap-1">
+                      <Button variant="outline" size="sm" className="h-8 w-8 p-0">
+                        <Eye className="w-3.5 h-3.5" />
+                      </Button>
+                      <Button variant="outline" size="sm" className="h-8 w-8 p-0">
+                        <Download className="w-3.5 h-3.5" />
+                      </Button>
                     </div>
                   </div>
                 </div>
@@ -234,20 +232,20 @@ const Records = () => {
         </div>
 
         {/* Summary Stats */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-3">
-          <Card className="bg-gradient-card border-0 shadow-card h-full">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <Card className="bg-gradient-card border-0 shadow-card">
             <CardContent className="p-3 text-center">
               <div className="text-xl font-bold text-education-navy">156</div>
               <div className="text-xs text-muted-foreground">Total Sessions</div>
             </CardContent>
           </Card>
-          <Card className="bg-gradient-card border-0 shadow-card h-full">
+          <Card className="bg-gradient-card border-0 shadow-card">
             <CardContent className="p-3 text-center">
               <div className="text-xl font-bold text-accent">91.2%</div>
               <div className="text-xs text-muted-foreground">Average Attendance</div>
             </CardContent>
           </Card>
-          <Card className="bg-gradient-card border-0 shadow-card h-full">
+          <Card className="bg-gradient-card border-0 shadow-card">
             <CardContent className="p-3 text-center">
               <div className="text-xl font-bold text-primary">1,248</div>
               <div className="text-xs text-muted-foreground">Students Tracked</div>
