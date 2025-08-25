@@ -727,67 +727,148 @@ const ExcuseApplicationContent = () => {
             <DialogTitle>Excuse Application Details</DialogTitle>
           </DialogHeader>
           {selectedExcuse && (
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 flex-1 overflow-hidden">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 flex-1 overflow-hidden">
               {/* Left side - Application details */}
-              <div className="space-y-4 lg:col-span-1">
-                <div>
-                  <Label className="text-sm font-medium">Student</Label>
-                  <p className="text-sm font-medium">
-                    {selectedExcuse.students?.firstname || 'Unknown'} {selectedExcuse.students?.surname || 'Student'}
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    {selectedExcuse.students?.student_id || 'N/A'} • {selectedExcuse.students?.program || 'N/A'}
-                  </p>
+              <div className="lg:col-span-1 bg-muted/30 p-6 rounded-lg border space-y-6">
+                {/* Header Section */}
+                <div className="border-b border-border pb-4">
+                  <h3 className="text-lg font-semibold text-foreground mb-3 flex items-center gap-2">
+                    <FileText className="h-5 w-5 text-primary" />
+                    Application Details
+                  </h3>
                 </div>
                 
-                <div>
-                  <Label className="text-sm font-medium">Status</Label>
-                  <div className="mt-1">
-                    {getStatusBadge(selectedExcuse.status)}
+                {/* Student Information */}
+                <div className="space-y-3">
+                  <div className="flex items-start gap-3 p-3 bg-background rounded-md border border-border/50">
+                    <div className="p-2 bg-primary/10 rounded-full">
+                      <svg className="h-4 w-4 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                      </svg>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Student</Label>
+                      <p className="text-base font-semibold text-foreground mt-1">
+                        {selectedExcuse.students?.firstname || 'Unknown'} {selectedExcuse.students?.surname || 'Student'}
+                      </p>
+                      <p className="text-sm text-muted-foreground flex items-center gap-2 mt-1">
+                        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs bg-secondary text-secondary-foreground">
+                          {selectedExcuse.students?.student_id || 'N/A'}
+                        </span>
+                        <span className="text-muted-foreground">•</span>
+                        <span>{selectedExcuse.students?.program || 'N/A'}</span>
+                      </p>
+                    </div>
+                  </div>
+                </div>
+                
+                {/* Status Section */}
+                <div className="space-y-3">
+                  <div className="flex items-start gap-3 p-3 bg-background rounded-md border border-border/50">
+                    <div className="p-2 bg-primary/10 rounded-full">
+                      {selectedExcuse.status === 'approved' ? (
+                        <CheckCircle2 className="h-4 w-4 text-green-600" />
+                      ) : selectedExcuse.status === 'rejected' ? (
+                        <AlertCircle className="h-4 w-4 text-red-600" />
+                      ) : (
+                        <Clock className="h-4 w-4 text-yellow-600" />
+                      )}
+                    </div>
+                    <div className="flex-1">
+                      <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Status</Label>
+                      <div className="mt-2">
+                        {getStatusBadge(selectedExcuse.status)}
+                      </div>
+                    </div>
                   </div>
                 </div>
 
-                <div>
-                  <Label className="text-sm font-medium">Absence Date</Label>
-                  <p className="text-sm">
-                    {format(new Date(selectedExcuse.absence_date), 'EEEE, MMMM d, yyyy')}
-                  </p>
+                {/* Absence Information */}
+                <div className="space-y-3">
+                  <div className="flex items-start gap-3 p-3 bg-background rounded-md border border-border/50">
+                    <div className="p-2 bg-primary/10 rounded-full">
+                      <CalendarIcon className="h-4 w-4 text-primary" />
+                    </div>
+                    <div className="flex-1">
+                      <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Absence Date</Label>
+                      <p className="text-base font-medium text-foreground mt-1">
+                        {format(new Date(selectedExcuse.absence_date), 'EEEE, MMMM d, yyyy')}
+                      </p>
+                    </div>
+                  </div>
                 </div>
 
+                {/* Review Notes Section */}
                 {selectedExcuse.review_notes && (
-                  <div>
-                    <Label className="text-sm font-medium">Review Notes</Label>
-                    <p className="text-sm whitespace-pre-wrap">{selectedExcuse.review_notes}</p>
+                  <div className="space-y-3">
+                    <div className="p-3 bg-background rounded-md border border-border/50">
+                      <div className="flex items-start gap-3 mb-3">
+                        <div className="p-2 bg-primary/10 rounded-full">
+                          <svg className="h-4 w-4 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
+                          </svg>
+                        </div>
+                        <div className="flex-1">
+                          <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Review Notes</Label>
+                        </div>
+                      </div>
+                      <div className="pl-11">
+                        <p className="text-sm text-foreground whitespace-pre-wrap leading-relaxed bg-muted/50 p-3 rounded border-l-2 border-primary/20">
+                          {selectedExcuse.review_notes}
+                        </p>
+                      </div>
+                    </div>
                   </div>
                 )}
 
-                <div className="text-xs text-muted-foreground">
-                  Submitted: {format(new Date(selectedExcuse.created_at), 'MMM d, yyyy h:mm a')}
-                  {selectedExcuse.reviewed_at && (
-                    <span className="block mt-1">
-                      Reviewed: {format(new Date(selectedExcuse.reviewed_at), 'MMM d, yyyy h:mm a')}
-                    </span>
-                  )}
+                {/* Timestamps Section */}
+                <div className="space-y-3 pt-4 border-t border-border/50">
+                  <div className="flex items-start gap-3 p-3 bg-background rounded-md border border-border/50">
+                    <div className="p-2 bg-primary/10 rounded-full">
+                      <Clock className="h-4 w-4 text-primary" />
+                    </div>
+                    <div className="flex-1">
+                      <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Timeline</Label>
+                      <div className="mt-2 space-y-2">
+                        <div className="flex items-center gap-2 text-sm">
+                          <div className="w-2 h-2 bg-primary rounded-full"></div>
+                          <span className="font-medium text-foreground">Submitted:</span>
+                          <span className="text-muted-foreground">{format(new Date(selectedExcuse.created_at), 'MMM d, yyyy h:mm a')}</span>
+                        </div>
+                        {selectedExcuse.reviewed_at && (
+                          <div className="flex items-center gap-2 text-sm">
+                            <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                            <span className="font-medium text-foreground">Reviewed:</span>
+                            <span className="text-muted-foreground">{format(new Date(selectedExcuse.reviewed_at), 'MMM d, yyyy h:mm a')}</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
                 </div>
 
+                {/* Actions Section */}
                 {selectedExcuse.status === 'pending' && (
-                  <div className="flex gap-2 pt-4">
-                    <Button
-                      variant="outline"
-                      className="text-green-600 border-green-200 hover:bg-green-50"
-                      onClick={() => handleUpdateStatus(selectedExcuse.id, 'approved')}
-                    >
-                      <Check className="h-4 w-4 mr-1" />
-                      Approve
-                    </Button>
-                    <Button
-                      variant="outline"
-                      className="text-red-600 border-red-200 hover:bg-red-50"
-                      onClick={() => handleUpdateStatus(selectedExcuse.id, 'rejected')}
-                    >
-                      <X className="h-4 w-4 mr-1" />
-                      Reject
-                    </Button>
+                  <div className="pt-4 border-t border-border/50">
+                    <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-3 block">Actions</Label>
+                    <div className="flex gap-3">
+                      <Button
+                        variant="outline"
+                        className="flex-1 text-green-600 border-green-200 hover:bg-green-50 transition-colors"
+                        onClick={() => handleUpdateStatus(selectedExcuse.id, 'approved')}
+                      >
+                        <Check className="h-4 w-4 mr-2" />
+                        Approve
+                      </Button>
+                      <Button
+                        variant="outline"
+                        className="flex-1 text-red-600 border-red-200 hover:bg-red-50 transition-colors"
+                        onClick={() => handleUpdateStatus(selectedExcuse.id, 'rejected')}
+                      >
+                        <X className="h-4 w-4 mr-2" />
+                        Reject
+                      </Button>
+                    </div>
                   </div>
                 )}
               </div>
