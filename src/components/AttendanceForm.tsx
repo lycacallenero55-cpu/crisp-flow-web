@@ -510,7 +510,7 @@ const AttendanceForm = ({ onSuccess, onSubmit, initialData }: AttendanceFormProp
       
       {/* Type Selection */}
       <div className="pb-3">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="flex flex-wrap justify-center gap-4">
           {[
             { type: "class" as AttendanceType, label: "Class Session", description: "Regular classroom attendance", bg: "bg-gradient-primary/5", hoverBg: "hover:bg-gradient-primary/10" },
             { type: "event" as AttendanceType, label: "School Event", description: "Assemblies, ceremonies, programs", bg: "bg-gradient-accent/5", hoverBg: "hover:bg-gradient-accent/10" },
@@ -520,7 +520,7 @@ const AttendanceForm = ({ onSuccess, onSubmit, initialData }: AttendanceFormProp
             .map((option) => (
             <div 
               key={option.type} 
-              className={`group relative rounded-lg p-0.5 ${option.bg} ${option.hoverBg} transition-all duration-200 hover:scale-105 hover:shadow-md`}
+              className={`group relative rounded-lg p-0.5 ${option.bg} ${option.hoverBg} transition-all duration-200 hover:scale-105 hover:shadow-md w-full sm:w-72`}
             >
               <div 
                 className={`p-4 rounded-lg cursor-pointer transition-all duration-200 h-full ${
