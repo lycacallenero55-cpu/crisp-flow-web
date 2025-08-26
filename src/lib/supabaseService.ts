@@ -1,16 +1,14 @@
-import { supabase } from './supabase';
+import { supabase } from '@/integrations/supabase/client';
 import type { 
   Session, 
   Student, 
   AttendanceRecord, 
-  User, 
   SessionWithStudents, 
   Signature, 
+  SignatureUploadOptions,
   SignatureMatchResult,
-  SignatureUploadOptions 
-} from '../types';
-import type { PostgrestQueryBuilder } from '@supabase/postgrest-js';
-import type { Database } from '../types/supabase';
+  User
+} from '@/types';
 
 // Session operations
 export const fetchSessions = async (startDate?: string, endDate?: string): Promise<Session[]> => {
@@ -19,7 +17,14 @@ export const fetchSessions = async (startDate?: string, endDate?: string): Promi
     
     let query = supabase
       .from('sessions')
-      .select('*')
+      .select(`
+        *,
+        creator:created_by_user_id(
+          first_name,
+          last_name,
+          role
+        )
+      `)
       .order('date', { ascending: true });
 
     // Ensure dates are in YYYY-MM-DD format for comparison
@@ -40,34 +45,46 @@ export const fetchSessions = async (startDate?: string, endDate?: string): Promi
     if (error) throw error;
     
     console.log('Fetched sessions:', data);
-    return data || [];
+    return (data as any) || [];
   } catch (error) {
     console.error('Error fetching sessions:', error);
     throw error;
   }
 };
 
-export const createSession = async (sessionData: Omit<Session, 'id' | 'created_at' | 'updated_at'>): Promise<Session> => {
+export const createSession = async (sessionData: Omit<Session, 'id' | 'created_at' | 'updated_at' | 'created_by_user_id'>): Promise<Session> => {
+  // Get current user
+  const { data: { user }, error: userError } = await supabase.auth.getUser();
+  if (userError || !user) {
+    throw new Error('User must be authenticated to create sessions');
+  }
+
+  // Add the creator's user ID automatically
+  const sessionWithCreator = {
+    ...sessionData,
+    created_by_user_id: user.id
+  };
+
   const { data, error } = await supabase
     .from('sessions')
-    .insert([sessionData])
+    .insert([sessionWithCreator] as any)
     .select()
     .single();
   
   if (error) throw error;
-  return data;
+  return data as Session;
 };
 
 export const updateSession = async (id: number, sessionData: Partial<Session>): Promise<Session> => {
   const { data, error } = await supabase
     .from('sessions')
-    .update(sessionData)
+    .update(sessionData as any)
     .eq('id', id)
     .select()
     .single();
   
   if (error) throw error;
-  return data;
+  return data as Session;
 };
 
 export const deleteSession = async (id: number): Promise<void> => {
@@ -84,29 +101,28 @@ export const fetchStudents = async (program?: string, year?: string, section?: s
   try {
     console.log('Fetching students with filters:', { program, year, section });
     
-      // Helper function to fetch all students with pagination
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const fetchAllStudents = async (baseQuery: any): Promise<Student[]> => {
-    const allStudents: Student[] = [];
-    let from = 0;
-    const pageSize = 1000; // Supabase default limit
-    
-    while (true) {
-      const { data, error } = await baseQuery.range(from, from + pageSize - 1);
-      if (error) throw error;
+    // Helper function to fetch all students with pagination
+    const fetchAllStudents = async (baseQuery: any): Promise<Student[]> => {
+      const allStudents: Student[] = [];
+      let from = 0;
+      const pageSize = 1000; // Supabase default limit
       
-      if (!data || data.length === 0) break;
+      while (true) {
+        const { data, error } = await baseQuery.range(from, from + pageSize - 1);
+        if (error) throw error;
+        
+        if (!data || data.length === 0) break;
+        
+        allStudents.push(...data);
+        
+        // If we got less than pageSize, we've reached the end
+        if (data.length < pageSize) break;
+        
+        from += pageSize;
+      }
       
-      allStudents.push(...data);
-      
-      // If we got less than pageSize, we've reached the end
-      if (data.length < pageSize) break;
-      
-      from += pageSize;
-    }
-    
-    return allStudents;
-  };
+      return allStudents;
+    };
     
     // Build the base query
     let baseQuery = supabase
@@ -189,24 +205,24 @@ export const fetchStudents = async (program?: string, year?: string, section?: s
 export const createStudent = async (studentData: Omit<Student, 'id' | 'created_at'>): Promise<Student> => {
   const { data, error } = await supabase
     .from('students')
-    .insert([studentData])
+    .insert([studentData] as any)
     .select()
     .single();
   
   if (error) throw error;
-  return data;
+  return data as Student;
 };
 
 export const updateStudent = async (id: number, studentData: Partial<Student>): Promise<Student> => {
   const { data, error } = await supabase
     .from('students')
-    .update(studentData)
+    .update(studentData as any)
     .eq('id', id)
     .select()
     .single();
   
   if (error) throw error;
-  return data;
+  return data as Student;
 };
 
 export const deleteStudent = async (id: number): Promise<void> => {
@@ -234,7 +250,9 @@ export const fetchSessionStudents = async (sessionId: number): Promise<SessionWi
   if (sessionError) throw sessionError;
   if (!session) throw new Error('Session not found');
 
-  console.log('Full session object:', JSON.stringify(session, null, 2));
+  const sessionData = session as any;
+
+  console.log('Full session object:', JSON.stringify(sessionData, null, 2));
 
   // Helper function to check if a value represents 'all' (case insensitive and includes 'all')
   const isAllValue = (value?: string) => {
@@ -244,7 +262,6 @@ export const fetchSessionStudents = async (sessionId: number): Promise<SessionWi
   };
 
   // Helper function to fetch all students with pagination
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const fetchAllStudents = async (baseQuery: any): Promise<Student[]> => {
     const allStudents: Student[] = [];
     let from = 0;
@@ -268,72 +285,24 @@ export const fetchSessionStudents = async (sessionId: number): Promise<SessionWi
   };
 
   // Log all fields in the session object for debugging
-  console.log('Session object:', JSON.stringify(session, null, 2));
+  console.log('Session object:', JSON.stringify(sessionData, null, 2));
   
   // Get the section value - check all possible field names
-  const sectionValue = session.section || session.session_section;
+  const sectionValue = sessionData.section || sessionData.session_section;
   
   console.log('Using filters:', {
-    program: session.program,
-    year: session.year,
+    program: sessionData.program,
+    year: sessionData.year,
     section: sectionValue
   });
 
-  // Build the base query for counting students
-  let countQuery = supabase
-    .from('students')
-    .select('*', { count: 'exact', head: true });
-    
-  // Apply filters only if they are not "all" values
-  if (session.program && !isAllValue(session.program)) {
-    countQuery = countQuery.eq('program', session.program.trim());
-  }
-  
-  if (session.year && !isAllValue(session.year)) {
-    // Convert year format if needed (e.g., '1st Year' to '1st')
-    let yearValue = session.year.trim();
-    if (yearValue.endsWith(' Year')) {
-      yearValue = yearValue.replace(' Year', '');
-    }
-    countQuery = countQuery.eq('year', yearValue);
-  }
-  
-  if (sectionValue && !isAllValue(sectionValue)) {
-    countQuery = countQuery.eq('section', sectionValue.trim());
-  }
-
-  // Count total matching students
-  const { count, error: countError } = await countQuery;
-
-  if (countError) {
-    console.error('Error counting students:', countError);
-    return { session, students: [], count: 0 };
-  }
-  
-  // Log the count
-  console.log('Total matching students:', count);
-
-  // Now fetch all students with pagination
   let allStudents: Student[] = [];
   
-  // Helper function to safely query students with error handling
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const queryStudents = async <T>(query: any): Promise<T[]> => {
-    try {
-      const { data, error } = await query;
-      if (error) throw error;
-      return data || [];
-    } catch (error) {
-      console.error('Error querying students:', error);
-      return [];
-    }
-  };
-
   // Build the base query for fetching students
   try {
     console.log('Fetching students with filters:', {
-      program: session.program,
-      year: session.year,
+      program: sessionData.program,
+      year: sessionData.year,
       section: sectionValue
     });
     
@@ -346,15 +315,15 @@ export const fetchSessionStudents = async (sessionId: number): Promise<SessionWi
     console.log('Base query created');
       
     // Apply program filter if specified and not "all"
-    if (session.program && !isAllValue(session.program)) {
-      const programValue = session.program.trim();
+    if (sessionData.program && !isAllValue(sessionData.program)) {
+      const programValue = sessionData.program.trim();
       console.log('Applying program filter:', programValue);
       baseQuery = baseQuery.eq('program', programValue);
     }
     
     // Apply year filter if specified and not "all"
-    if (session.year && !isAllValue(session.year)) {
-      let yearValue = session.year.trim();
+    if (sessionData.year && !isAllValue(sessionData.year)) {
+      let yearValue = sessionData.year.trim();
       // Convert year format if needed (e.g., '1st Year' to '1st')
       if (yearValue.endsWith(' Year')) {
         yearValue = yearValue.replace(' Year', '');
@@ -375,110 +344,6 @@ export const fetchSessionStudents = async (sessionId: number): Promise<SessionWi
     allStudents = await fetchAllStudents(baseQuery);
     console.log(`Found ${allStudents.length} students with exact filters`);
     
-    // Debug: Log first few students if any
-    if (allStudents.length > 0) {
-      console.log('Sample students:', allStudents.slice(0, 3).map((s: Student) => ({
-        id: s.id,
-        name: `${s.firstname} ${s.surname}`,
-        program: s.program,
-        year: s.year,
-        section: s.section
-      })));
-    }
-    
-    // If no students found with exact filters, try alternative section formats
-    if (allStudents.length === 0 && sectionValue && !isAllValue(sectionValue)) {
-      console.log('Trying alternative section formats...');
-      
-      // Extract the section number (e.g., '1D' from 'BPED 1D')
-      const sectionNumber = sectionValue.trim().split(' ').pop() || '';
-      console.log('Extracted section number/identifier:', sectionNumber);
-      
-      // Try different section formats
-      const sectionFormats = [
-        sectionValue.trim(), // Original format (e.g., 'BPED 1D')
-        sectionNumber,      // Just the section number/identifier (e.g., '1D')
-        sectionValue.trim().replace(/\s+/g, ' '), // Normalize spaces
-        sectionValue.trim().toUpperCase(),
-        sectionValue.trim().toLowerCase(),
-        sectionValue.trim().replace(/\s/g, ''), // Remove all spaces
-        sectionNumber.replace(/\s/g, '') // Just the section number without spaces
-      ];
-
-      // Remove duplicates from formats
-      const uniqueFormats = [...new Set(sectionFormats)];
-      console.log('Trying section formats:', uniqueFormats);
-
-      for (const format of uniqueFormats) {
-        if (!format) continue;
-        
-        console.log(`Trying section format: "${format}"`);
-        
-        // Build query with program and year if available
-        let altQuery = supabase
-          .from('students')
-          .select('*');
-          
-        if (session.program && !isAllValue(session.program)) {
-          altQuery = altQuery.eq('program', session.program.trim());
-        }
-        
-        if (session.year && !isAllValue(session.year)) {
-          let yearValue = session.year.trim();
-          if (yearValue.endsWith(' Year')) {
-            yearValue = yearValue.replace(' Year', '');
-          }
-          altQuery = altQuery.eq('year', yearValue);
-        }
-        
-        // Try both exact and partial matches with pagination
-        const exactMatch = await fetchAllStudents(altQuery.eq('section', format));
-        
-        if (exactMatch?.length) {
-          console.log(`Found ${exactMatch.length} students with exact section: "${format}"`);
-          allStudents = [...exactMatch];
-          break;
-        }
-        
-        // If no exact match, try partial match
-        const partialMatch = await fetchAllStudents(altQuery.ilike('section', `%${format}%`));
-        
-        if (partialMatch?.length) {
-          console.log(`Found ${partialMatch.length} students with partial section: "${format}"`);
-          allStudents = [...partialMatch];
-          break;
-        }
-      }
-    }
-    
-    // If still no results, try with just program and year
-    if (allStudents.length === 0 && session.program && session.year && 
-        !isAllValue(session.program) && !isAllValue(session.year)) {
-      console.log('Falling back to program and year only');
-      let yearValue = session.year.trim();
-      if (yearValue.endsWith(' Year')) {
-        yearValue = yearValue.replace(' Year', '');
-      }
-      const result = await fetchAllStudents(supabase
-        .from('students')
-        .select('*')
-        .eq('program', session.program.trim())
-        .eq('year', yearValue));
-      
-      allStudents = [...result];
-    }
-    
-    // If still no results, try with just program
-    if (allStudents.length === 0 && session.program && !isAllValue(session.program)) {
-      console.log('Falling back to program only');
-      const result = await fetchAllStudents(supabase
-        .from('students')
-        .select('*')
-        .eq('program', session.program.trim()));
-      
-      allStudents = [...result];
-    }
-    
   } catch (error) {
     console.error('Error fetching students:', error);
     throw error;
@@ -486,7 +351,7 @@ export const fetchSessionStudents = async (sessionId: number): Promise<SessionWi
 
   const students = allStudents || [];
   
-  if (!session) {
+  if (!sessionData) {
     throw new Error('Session not found');
   }
 
@@ -500,7 +365,7 @@ export const fetchSessionStudents = async (sessionId: number): Promise<SessionWi
 
   // Merge student data with attendance
   const studentsWithAttendance = students.map(student => {
-    const attendanceRecord = attendance?.find(a => a.student_id === student.id) || null;
+    const attendanceRecord = (attendance as any)?.find((a: any) => a.student_id === student.id) || null;
     return {
       ...student,
       full_name: `${student.firstname} ${student.surname}`,
@@ -510,21 +375,21 @@ export const fetchSessionStudents = async (sessionId: number): Promise<SessionWi
     };
   });
 
-  const sessionData = {
-    id: session.id,
-    title: session.title,
-    date: session.date,
-    time_in: session.time_in || null,
-    time_out: session.time_out || null,
-    program: session.program,
-    year: session.year,
-    section: session.section,
-    description: session.description || '',
-    type: session.type || 'class'
+  const sessionInfo = {
+    id: sessionData.id,
+    title: sessionData.title,
+    date: sessionData.date,
+    time_in: sessionData.time_in || null,
+    time_out: sessionData.time_out || null,
+    program: sessionData.program,
+    year: sessionData.year,
+    section: sessionData.section,
+    description: sessionData.description || '',
+    type: sessionData.type || 'class'
   };
 
   return {
-    session: sessionData,
+    session: sessionInfo,
     students: studentsWithAttendance,
     count: studentsWithAttendance.length,
   };
@@ -547,10 +412,10 @@ export const markAttendance = async (
         time_in: timeIn || null,
         time_out: timeOut || null,
         updated_at: new Date().toISOString(),
-      },
+      } as any,
       { onConflict: 'session_id,student_id' }
     )
-    .select()
+    .select();
 
   if (error) {
     console.error('Error fetching attendance records:', error);
@@ -579,7 +444,7 @@ export const getStudentSignatures = async (studentId: number): Promise<Signature
 
 export const getPrimarySignature = async (studentId: number): Promise<Signature | null> => {
   const { data, error } = await supabase
-    .rpc('get_primary_signature', { student_id: studentId })
+    .rpc('get_primary_signature', { student_id: studentId } as any)
     .single();
 
   if (error) {
@@ -595,7 +460,7 @@ export const compareSignatures = async (signature1Id: number, signature2Id: numb
     .rpc('compare_signatures', { 
       sig1_id: signature1Id, 
       sig2_id: signature2Id 
-    })
+    } as any)
     .single();
 
   if (error) {
@@ -705,7 +570,7 @@ export const uploadSignature = async (
 
     const { data: signature, error: signatureError } = await supabase
       .from('signatures')
-      .insert([signatureData])
+      .insert([signatureData] as any)
       .select()
       .single();
 
@@ -741,9 +606,9 @@ export const getCurrentUser = async (): Promise<User | null> => {
   return {
     id: user.id,
     email: user.email || '',
-    name: profile?.full_name || user.user_metadata?.full_name || '',
-    role: profile?.role || 'user',
-    avatar_url: profile?.avatar_url || '',
+    name: (profile as any)?.full_name || user.user_metadata?.full_name || '',
+    role: (profile as any)?.role || 'ssg_officer',
+    avatar_url: (profile as any)?.avatar_url || '',
   };
 };
 
@@ -768,7 +633,7 @@ export const updateUserProfile = async (updates: Partial<User>): Promise<User> =
       full_name: updates.name,
       role: updates.role,
       updated_at: new Date().toISOString(),
-    })
+    } as any)
     .select()
     .single();
   
@@ -777,8 +642,8 @@ export const updateUserProfile = async (updates: Partial<User>): Promise<User> =
   return {
     id: user.id,
     email: updates.email || user.email || '',
-    name: data.full_name,
-    role: data.role,
-    avatar_url: data.avatar_url || '',
+    name: (data as any).full_name,
+    role: (data as any).role,
+    avatar_url: (data as any).avatar_url || '',
   };
 };

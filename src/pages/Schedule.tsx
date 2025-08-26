@@ -365,8 +365,6 @@ const Schedule = () => {
           time: session.time_in && session.time_out 
             ? `${formatTime(session.time_in)} - ${formatTime(session.time_out)}` 
             : '',
-          location: session.location || 'Not specified',
-          instructor: session.instructor || 'Instructor',
           students: studentCount,
           program: session.program || 'General',
           year: session.year || 'All Year Levels',
@@ -525,8 +523,6 @@ const Schedule = () => {
           time: session.time_in && session.time_out 
             ? `${formatTime(session.time_in)} - ${formatTime(session.time_out)}` 
             : '',
-          location: session.location || 'Not specified',
-          instructor: session.instructor || 'Instructor',
           students: studentCount,
           program: session.program || 'General',
           year: session.year || 'All Year Levels',
@@ -729,8 +725,6 @@ const Schedule = () => {
       time: data.timeIn && data.timeOut ? `${data.timeIn} - ${data.timeOut}` : 'TBD',
       time_in: data.timeIn || '',
       time_out: data.timeOut || '',
-      location: data.venue || 'Not specified',
-      instructor: 'Instructor',
       students: 0,
       program: data.program || 'General',
       year: data.year || 'All Year Levels',
@@ -758,14 +752,12 @@ const Schedule = () => {
         type: sessionData.attendanceType as 'class' | 'event' | 'other',
         time_in: sessionData.timeIn,
         time_out: sessionData.timeOut,
-        location: sessionData.venue || 'Not specified',
         program: sessionData.program || 'General',
         year: sessionData.year || 'All Year Levels',
         section: sessionData.section || 'All Sections',
         description: sessionData.description || '',
         capacity: sessionData.capacity ? String(sessionData.capacity) : 'Unlimited',
-        date: formattedDate,
-        instructor: 'Instructor' // This should be replaced with actual user data
+        date: formattedDate
       };
 
       console.log('Sending session data to server:', JSON.stringify(sessionForSupabase, null, 2));
@@ -875,22 +867,10 @@ const Schedule = () => {
             ...sessionForSupabase,
             id: newSession.id,
             time: `${sessionForSupabase.time_in} - ${sessionForSupabase.time_out}`,
-            students: studentCount, // Use calculated student count
+            students: studentCount,
             created_at: newSession.created_at || new Date().toISOString(),
             updated_at: newSession.updated_at || new Date().toISOString(),
-            // Ensure all required fields are included
-            title: sessionForSupabase.title,
-            type: sessionForSupabase.type,
-            time_in: sessionForSupabase.time_in,
-            time_out: sessionForSupabase.time_out,
-            location: sessionForSupabase.location,
-            instructor: sessionForSupabase.instructor,
-            program: sessionForSupabase.program,
-            year: sessionForSupabase.year,
-            section: sessionForSupabase.section,
-            description: sessionForSupabase.description,
-            capacity: sessionForSupabase.capacity,
-            date: sessionForSupabase.date
+            created_by_user_id: newSession.created_by_user_id
           };
           
           // Update the state with the new session - no need to call loadSessions()

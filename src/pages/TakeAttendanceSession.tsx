@@ -20,8 +20,6 @@ type Session = {
   date: string;
   time_in: string;
   time_out: string;
-  location: string;
-  instructor: string;
 };
 
 const TakeAttendanceSession = () => {
@@ -66,7 +64,7 @@ const TakeAttendanceSession = () => {
         const { data, error } = await supabase
           .from('sessions')
           .select('*')
-          .eq('id', sessionId)
+          .eq('id', parseInt(sessionId))
           .single();
 
         if (error) throw error;

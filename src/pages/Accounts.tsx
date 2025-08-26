@@ -231,8 +231,8 @@ const Accounts = () => {
                 <SelectContent className="bg-popover border-border shadow-elegant">
                   <SelectItem value="all">All Roles</SelectItem>
                   <SelectItem value="admin">Admin</SelectItem>
-                  <SelectItem value="instructor">Instructor</SelectItem>
-                  <SelectItem value="user">User</SelectItem>
+                  <SelectItem value="staff">Staff</SelectItem>
+                  <SelectItem value="ssg_officer">SSG Officer</SelectItem>
                 </SelectContent>
               </Select>
               <Select value={selectedStatus} onValueChange={setSelectedStatus}>

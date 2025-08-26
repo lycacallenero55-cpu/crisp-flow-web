@@ -50,7 +50,7 @@ export interface User {
   id: string;
   email: string;
   name: string;
-  role: 'admin' | 'instructor' | 'user';
+  role: 'admin' | 'staff' | 'ssg_officer';
   avatar_url?: string;
   created_at?: string;
   updated_at?: string;
@@ -77,8 +77,7 @@ export interface Session {
   time?: string; // Kept for backward compatibility
   time_in?: string;
   time_out?: string;
-  location?: string;
-  instructor: string;
+  created_by_user_id?: string; // UUID of the user who created the session
   students?: number;
   program: string;
   year: string;
