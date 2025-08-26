@@ -14,7 +14,8 @@ import {
   ChevronRight, 
   MapPin,
   SquarePen,
-  Trash2
+  Trash2,
+  CalendarClock
 } from 'lucide-react';
 
 // UI Components
@@ -1262,7 +1263,7 @@ const Schedule = () => {
         <div className="space-y-2">
           <div className="flex items-center justify-between">
             <h3 className="text-base font-semibold text-education-navy flex items-center gap-2">
-              <Calendar className="w-4 h-4" />
+              <CalendarClock className="w-4 h-4" />
               <span className="text-sm">Scheduled Sessions</span>
             </h3>
           </div>
@@ -1343,7 +1344,7 @@ const Schedule = () => {
             ) : (
               <Card className="bg-gradient-card border-0 shadow-card">
                 <CardContent className="p-8 text-center">
-                  <Calendar className="w-10 h-10 mx-auto text-muted-foreground mb-2" />
+                  <CalendarClock className="w-10 h-10 mx-auto text-muted-foreground mb-2" />
                   <h4 className="text-lg font-medium text-education-navy">
                     {sessions.length === 0 ? 'No sessions scheduled' : 'No matching sessions found'}
                   </h4>
