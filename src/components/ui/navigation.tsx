@@ -83,7 +83,6 @@ const getNavItems = (userRole: string = '') => [
   },
   { icon: Users, label: "Students", href: "/students" },
   { icon: FileText, label: "Records", href: "/records" },
-  { icon: FileText, label: "Reports", href: "/reports" },
   { 
     icon: ClipboardCheck, 
     label: "Excuse Application", 
