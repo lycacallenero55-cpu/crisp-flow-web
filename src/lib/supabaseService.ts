@@ -19,7 +19,14 @@ export const fetchSessions = async (startDate?: string, endDate?: string): Promi
     
     let query = supabase
       .from('sessions')
-      .select('*')
+      .select(`
+        *,
+        creator:created_by_user_id(
+          first_name,
+          last_name,
+          role
+        )
+      `)
       .order('date', { ascending: true });
 
     // Ensure dates are in YYYY-MM-DD format for comparison
@@ -47,10 +54,22 @@ export const fetchSessions = async (startDate?: string, endDate?: string): Promi
   }
 };
 
-export const createSession = async (sessionData: Omit<Session, 'id' | 'created_at' | 'updated_at'>): Promise<Session> => {
+export const createSession = async (sessionData: Omit<Session, 'id' | 'created_at' | 'updated_at' | 'created_by_user_id'>): Promise<Session> => {
+  // Get current user
+  const { data: { user }, error: userError } = await supabase.auth.getUser();
+  if (userError || !user) {
+    throw new Error('User must be authenticated to create sessions');
+  }
+
+  // Add the creator's user ID automatically
+  const sessionWithCreator = {
+    ...sessionData,
+    created_by_user_id: user.id
+  };
+
   const { data, error } = await supabase
     .from('sessions')
-    .insert([sessionData])
+    .insert([sessionWithCreator])
     .select()
     .single();
   

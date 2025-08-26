@@ -49,8 +49,7 @@ type Session = {
   date: string;
   time_in: string;
   time_out: string;
-  location: string;
-  instructor: string;
+  created_by_user_id?: string;
   capacity: number;
   program: string;
   year: string;
@@ -62,6 +61,11 @@ type Session = {
     status: 'present' | 'absent' | 'late' | 'excused';
   }>;
   attendees_count?: number;
+  creator?: {
+    first_name: string;
+    last_name: string;
+    role: string;
+  };
 };
 
 const ITEMS_PER_PAGE = 10;
@@ -115,7 +119,14 @@ const TakeAttendanceContent: React.FC = () => {
       // Build the query with filters
       let query = supabase
         .from('sessions')
-        .select('*', { count: 'exact' });
+        .select(`
+          *,
+          creator:created_by_user_id(
+            first_name,
+            last_name,
+            role
+          )
+        `, { count: 'exact' });
       
       // Removed date range filter to fetch all sessions
       // Date filtering will be handled client-side for the tabs
@@ -148,8 +159,8 @@ const TakeAttendanceContent: React.FC = () => {
         date: session.date,
         time_in: session.time_in || '00:00',
         time_out: session.time_out || '00:00',
-        location: session.location || 'TBD',
-        instructor: session.instructor || 'TBD',
+        created_by_user_id: session.created_by_user_id,
+        creator: session.creator,
         capacity: session.capacity || 0,
         program: session.program || '',
         year: session.year || '',
@@ -184,11 +195,13 @@ const TakeAttendanceContent: React.FC = () => {
   useEffect(() => {
     const filtered = sessions.filter(session => {
       // Apply search term filter
-      return !searchTerm || 
+        return !searchTerm || 
         session.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
         (session.description && session.description.toLowerCase().includes(searchTerm.toLowerCase())) ||
-        session.instructor.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (session.location && session.location.toLowerCase().includes(searchTerm.toLowerCase()));
+        (session.creator && (
+          `${session.creator.first_name} ${session.creator.last_name}`.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          session.creator.role.toLowerCase().includes(searchTerm.toLowerCase())
+        ));
     });
     
     setFilteredSessions(filtered);
@@ -476,10 +489,11 @@ const SessionCard: React.FC<SessionCardProps> = ({ session, onStartAttendance })
           </div>
           <div className="space-y-1">
             <div className="text-muted-foreground text-ellipsis overflow-hidden">
-              <span className="font-medium">Instr:</span> {session.instructor}
-            </div>
-            <div className="text-muted-foreground text-ellipsis overflow-hidden">
-              <span className="font-medium">Loc:</span> {session.location || 'TBD'}
+              <span className="font-medium">Created by:</span> {
+                session.creator 
+                  ? `${session.creator.role.charAt(0).toUpperCase() + session.creator.role.slice(1)} (${session.creator.first_name} ${session.creator.last_name})`
+                  : 'System'
+              }
             </div>
           </div>
         </div>
