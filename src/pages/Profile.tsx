@@ -215,6 +215,10 @@ const Profile = () => {
         return 'Instructor';
       case 'student':
         return 'Student';
+      case 'staff':
+        return 'Staff';
+      case 'ssg_officer':
+        return 'SSG Officer';
       default:
         return 'User';
     }
@@ -228,6 +232,10 @@ const Profile = () => {
       case 'instructor':
         return 'default';
       case 'student':
+        return 'secondary';
+      case 'staff':
+        return 'default';
+      case 'ssg_officer':
         return 'secondary';
       default:
         return 'outline';
