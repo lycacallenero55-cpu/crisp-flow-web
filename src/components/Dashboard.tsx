@@ -1,7 +1,7 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { CalendarDays, Users, UserCheck, BarChart3, CalendarClock, CheckCircle, TrendingUp, TrendingDown, Activity } from "lucide-react";
+import { CalendarClock, Users, UserCheck, BarChart3, CheckCircle, TrendingUp, TrendingDown, Activity } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
 import { useEffect, useState, useRef, useCallback, useMemo } from "react";
@@ -462,7 +462,7 @@ const Dashboard = () => {
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3 px-6 pt-6">
             <CardTitle className="text-sm font-medium text-indigo-700">Academic Year</CardTitle>
             <div className="p-2 bg-indigo-200 rounded-lg group-hover:bg-indigo-300 transition-colors">
-              <CalendarDays className="h-4 w-4 text-indigo-800" />
+              <CalendarClock className="h-4 w-4 text-indigo-800" />
             </div>
           </CardHeader>
           <CardContent className="pt-0 px-6 pb-6">
@@ -470,7 +470,7 @@ const Dashboard = () => {
               {academicYear?.year || '2024-2025'}
             </div>
             <div className="flex items-center text-sm text-indigo-700">
-              <CalendarDays className="h-3 w-3 mr-1" />
+              <CalendarClock className="h-3 w-3 mr-1" />
               {academicYear?.semester || 'First Semester'}
             </div>
           </CardContent>
@@ -627,7 +627,7 @@ const Dashboard = () => {
                       ) : session.status === 'ongoing' ? (
                         <CalendarClock className="h-4 w-4 text-blue-700" />
                       ) : (
-                        <CalendarDays className="h-4 w-4 text-orange-700" />
+                        <CalendarClock className="h-4 w-4 text-orange-700" />
                       )}
                     </div>
                     <div className="flex-1 min-w-0">
@@ -658,7 +658,7 @@ const Dashboard = () => {
               ) : (
                 <div className="text-center py-8">
                   <div className="p-3 bg-gray-50 rounded-lg inline-block mb-3">
-                    <CalendarDays className="h-6 w-6 text-gray-400" />
+                    <CalendarClock className="h-6 w-6 text-gray-400" />
                   </div>
                   <p className="text-sm text-gray-500">No recent sessions</p>
                   <p className="text-xs text-gray-400 mt-1">Attendance sessions will appear here</p>
