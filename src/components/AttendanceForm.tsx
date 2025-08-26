@@ -39,17 +39,33 @@ const AttendanceForm = ({ onSuccess, onSubmit, initialData }: AttendanceFormProp
   const [currentRole, setCurrentRole] = useState<string>("");
   const [roleReady, setRoleReady] = useState<boolean>(false);
 
+  // Read cached role (same key used elsewhere)
+  const getCachedUserRole = () => {
+    try {
+      return localStorage.getItem('userRole') || '';
+    } catch {
+      return '';
+    }
+  };
+
   useEffect(() => {
     let isMounted = true;
     const resolveRole = async () => {
-      // Immediate metadata read to avoid flicker
+      // 0) Cached role for instant render (prevents initial flicker for known users)
+      const cached = String(getCachedUserRole() || '').toLowerCase();
+      if (isMounted && cached) {
+        setCurrentRole(cached);
+        setRoleReady(true);
+      }
+
+      // 1) Immediate metadata read to avoid flicker when available
       const metaRole = String((user as any)?.user_metadata?.role || (user as any)?.app_metadata?.role || "").toLowerCase();
       if (isMounted && metaRole) {
         setCurrentRole(metaRole);
         setRoleReady(true);
       }
 
-      // Try profiles.role (source of truth)
+      // 2) Try profiles.role (source of truth)
       if (user?.id) {
         const { data: profile } = await supabase
           .from('profiles')
@@ -64,7 +80,7 @@ const AttendanceForm = ({ onSuccess, onSubmit, initialData }: AttendanceFormProp
         }
       }
 
-      // If nothing found, still mark ready to render with conservative defaults
+      // 3) If nothing found, still mark ready to render with conservative defaults
       if (isMounted) setRoleReady(true);
     };
     resolveRole();
