@@ -265,11 +265,10 @@ export type Database = {
         Row: {
           capacity: string | null
           created_at: string | null
+          created_by_user_id: string | null
           date: string
           description: string | null
           id: number
-          instructor: string
-          location: string | null
           program: string
           section: string
           time_in: string | null
@@ -282,11 +281,10 @@ export type Database = {
         Insert: {
           capacity?: string | null
           created_at?: string | null
+          created_by_user_id?: string | null
           date: string
           description?: string | null
           id?: number
-          instructor: string
-          location?: string | null
           program: string
           section: string
           time_in?: string | null
@@ -299,11 +297,10 @@ export type Database = {
         Update: {
           capacity?: string | null
           created_at?: string | null
+          created_by_user_id?: string | null
           date?: string
           description?: string | null
           id?: number
-          instructor?: string
-          location?: string | null
           program?: string
           section?: string
           time_in?: string | null
@@ -313,7 +310,15 @@ export type Database = {
           updated_at?: string | null
           year?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "sessions_created_by_user_id_fkey"
+            columns: ["created_by_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       signatures: {
         Row: {
@@ -494,6 +499,10 @@ export type Database = {
         Args: { student_id_param: number }
         Returns: string
       }
+      get_role_label: {
+        Args: { role_name: string }
+        Returns: string
+      }
       halfvec_avg: {
         Args: { "": number[] }
         Returns: unknown
@@ -530,7 +539,7 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: boolean
       }
-      is_instructor: {
+      is_staff: {
         Args: Record<PropertyKey, never>
         Returns: boolean
       }
