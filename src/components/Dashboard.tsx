@@ -103,6 +103,11 @@ const Dashboard = () => {
     activeClasses: 0,
     pendingExcuses: 0
   });
+
+  // Mock placeholders for new dashboard subtitles (replace with real data later)
+  const mockYesterdayPresents = 1354; // Count of presents yesterday
+  const mockYesterdayAttendanceRate = 93.8; // % yesterday
+  const mockCompletedSessionsToday = 13; // completed sessions today
   
   // Academic Year state
   const [academicYear, setAcademicYear] = useState<{
@@ -403,7 +408,7 @@ const Dashboard = () => {
             </div>
             <div className="flex items-center text-sm text-purple-700">
               <Target className="h-3 w-3 mr-1" />
-              {realTimeStats.todaySessions} sessions today
+              {mockYesterdayPresents.toLocaleString()} yesterday
             </div>
           </CardContent>
         </Card>
@@ -419,14 +424,14 @@ const Dashboard = () => {
             <div className="text-3xl font-bold text-green-900 mb-1">94.2%</div>
             <div className="flex items-center text-sm text-green-700">
               <TrendingUp className="h-3 w-3 mr-1" />
-              +1.2% from last week
+              {mockYesterdayAttendanceRate}% yesterday
             </div>
           </CardContent>
         </Card>
         
         <Card className="bg-gradient-to-br from-orange-50 to-orange-100 border-0 shadow-sm hover:shadow-md transition-all duration-200 group">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3 px-6 pt-6">
-            <CardTitle className="text-sm font-medium text-orange-700">Active Classes</CardTitle>
+            <CardTitle className="text-sm font-medium text-orange-700">Today's Sessions</CardTitle>
             <div className="p-2 bg-orange-200 rounded-lg group-hover:bg-orange-300 transition-colors">
               <BookOpen className="h-4 w-4 text-orange-800" />
             </div>
@@ -437,7 +442,7 @@ const Dashboard = () => {
             </div>
             <div className="flex items-center text-sm text-orange-700">
               <AlertCircle className="h-3 w-3 mr-1" />
-              {realTimeStats.pendingExcuses} pending excuses
+              {mockCompletedSessionsToday} completed
             </div>
           </CardContent>
         </Card>
