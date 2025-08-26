@@ -37,11 +37,19 @@ const AttendanceForm = ({ onSuccess, onSubmit, initialData }: AttendanceFormProp
   const { user } = useAuth();
 
   const [currentRole, setCurrentRole] = useState<string>("");
+  const [roleReady, setRoleReady] = useState<boolean>(false);
 
   useEffect(() => {
     let isMounted = true;
     const resolveRole = async () => {
-      // 1) Try profiles.role (source of truth)
+      // Immediate metadata read to avoid flicker
+      const metaRole = String((user as any)?.user_metadata?.role || (user as any)?.app_metadata?.role || "").toLowerCase();
+      if (isMounted && metaRole) {
+        setCurrentRole(metaRole);
+        setRoleReady(true);
+      }
+
+      // Try profiles.role (source of truth)
       if (user?.id) {
         const { data: profile } = await supabase
           .from('profiles')
@@ -51,17 +59,13 @@ const AttendanceForm = ({ onSuccess, onSubmit, initialData }: AttendanceFormProp
         const dbRole = String(profile?.role || "").toLowerCase();
         if (isMounted && dbRole) {
           setCurrentRole(dbRole);
+          setRoleReady(true);
           return;
         }
       }
-      // 2) Fallbacks: user metadata/app metadata
-      const metaRole = String((user as any)?.user_metadata?.role || (user as any)?.app_metadata?.role || "").toLowerCase();
-      if (isMounted && metaRole) {
-        setCurrentRole(metaRole);
-        return;
-      }
-      // 3) Default: admin if no user? else staff-like conservative default
-      if (isMounted) setCurrentRole("");
+
+      // If nothing found, still mark ready to render with conservative defaults
+      if (isMounted) setRoleReady(true);
     };
     resolveRole();
     return () => {
@@ -73,7 +77,6 @@ const AttendanceForm = ({ onSuccess, onSubmit, initialData }: AttendanceFormProp
     if (currentRole === "admin") return ["class", "event", "other"];
     if (currentRole === "staff" || currentRole === "instructor") return ["class"];
     if (currentRole === "ssg_officer") return ["event", "other"];
-    // default conservative: allow class only
     return ["class"];
   }, [currentRole]);
 
@@ -90,10 +93,10 @@ const AttendanceForm = ({ onSuccess, onSubmit, initialData }: AttendanceFormProp
   
   // Ensure selected type is allowed for the current role
   useEffect(() => {
-    if (!allowedTypes.includes(attendanceType)) {
+    if (roleReady && !allowedTypes.includes(attendanceType)) {
       setAttendanceType(allowedTypes[0]);
     }
-  }, [allowedTypes, attendanceType]);
+  }, [roleReady, allowedTypes, attendanceType]);
   
   // State for dropdown options
   const [loadingOptions, setLoadingOptions] = useState(false);
@@ -510,55 +513,60 @@ const AttendanceForm = ({ onSuccess, onSubmit, initialData }: AttendanceFormProp
       
       {/* Type Selection */}
       <div className="pb-3">
-        <div className="flex flex-wrap justify-center gap-4">
-          {[
-            { type: "class" as AttendanceType, label: "Class Session", description: "Regular classroom attendance", bg: "bg-gradient-primary/5", hoverBg: "hover:bg-gradient-primary/10" },
-            { type: "event" as AttendanceType, label: "School Event", description: "Assemblies, ceremonies, programs", bg: "bg-gradient-accent/5", hoverBg: "hover:bg-gradient-accent/10" },
-            { type: "other" as AttendanceType, label: "Other Activity", description: "Workshops, field trips, meetings", bg: "bg-education-navy/5", hoverBg: "hover:bg-education-navy/10" }
-          ]
-            .filter(option => allowedTypes.includes(option.type))
-            .map((option) => (
-            <div 
-              key={option.type} 
-              className={`group relative rounded-lg p-0.5 ${option.bg} ${option.hoverBg} transition-all duration-200 hover:scale-105 hover:shadow-md w-full sm:w-72`}
-            >
+        {roleReady && (
+          <div
+            className="grid gap-4 justify-center mx-auto"
+            style={{ gridTemplateColumns: `repeat(${allowedTypes.length}, minmax(12rem, 1fr))`, maxWidth: '900px' }}
+          >
+            {[
+              { type: "class" as AttendanceType, label: "Class Session", description: "Regular classroom attendance", bg: "bg-gradient-primary/5", hoverBg: "hover:bg-gradient-primary/10" },
+              { type: "event" as AttendanceType, label: "School Event", description: "Assemblies, ceremonies, programs", bg: "bg-gradient-accent/5", hoverBg: "hover:bg-gradient-accent/10" },
+              { type: "other" as AttendanceType, label: "Other Activity", description: "Workshops, field trips, meetings", bg: "bg-education-navy/5", hoverBg: "hover:bg-education-navy/10" }
+            ]
+              .filter(option => allowedTypes.includes(option.type))
+              .map((option) => (
               <div 
-                className={`p-4 rounded-lg cursor-pointer transition-all duration-200 h-full ${
-                  attendanceType === option.type 
-                    ? getTypeColor(option.type) 
-                    : 'bg-white group-hover:bg-white/90 group-hover:shadow-sm'
-                }`}
-                onClick={() => setAttendanceType(option.type)}
+                key={option.type} 
+                className={`group relative rounded-lg p-0.5 ${option.bg} ${option.hoverBg} transition-all duration-200 hover:scale-105 hover:shadow-md w-full`}
               >
-                <div className="flex flex-col items-center gap-1.5">
-                  <div className={`transition-all duration-200 transform ${
+                <div 
+                  className={`p-4 rounded-lg cursor-pointer transition-all duration-200 h-full ${
                     attendanceType === option.type 
-                      ? 'text-white scale-110' 
-                      : 'text-muted-foreground group-hover:text-primary group-hover:scale-110'
-                  }`}>
-                    {getTypeIcon(option.type)}
-                  </div>
-                  <div className="text-center">
-                    <div className={`font-medium text-sm transition-colors duration-200 ${
+                      ? getTypeColor(option.type) 
+                      : 'bg-white group-hover:bg-white/90 group-hover:shadow-sm'
+                  }`}
+                  onClick={() => setAttendanceType(option.type)}
+                >
+                  <div className="flex flex-col items-center gap-1.5">
+                    <div className={`transition-all duration-200 transform ${
                       attendanceType === option.type 
-                        ? 'text-white' 
-                        : 'text-foreground group-hover:text-primary'
+                        ? 'text-white scale-110' 
+                        : 'text-muted-foreground group-hover:text-primary group-hover:scale-110'
                     }`}>
-                      {option.label}
+                      {getTypeIcon(option.type)}
                     </div>
-                    <div className={`text-xs transition-colors duration-200 ${
-                      attendanceType === option.type 
-                        ? 'text-white/90' 
-                        : 'text-muted-foreground group-hover:text-primary/80'
-                    }`}>
-                      {option.description}
+                    <div className="text-center">
+                      <div className={`font-medium text-sm transition-colors duration-200 ${
+                        attendanceType === option.type 
+                          ? 'text-white' 
+                          : 'text-foreground group-hover:text-primary'
+                      }`}>
+                        {option.label}
+                      </div>
+                      <div className={`text-xs transition-colors duration-200 ${
+                        attendanceType === option.type 
+                          ? 'text-white/90' 
+                          : 'text-muted-foreground group-hover:text-primary/80'
+                      }`}>
+                        {option.description}
+                      </div>
                     </div>
                   </div>
                 </div>
               </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Dynamic Form */}
