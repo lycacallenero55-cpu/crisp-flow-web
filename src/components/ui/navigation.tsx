@@ -18,8 +18,7 @@ import {
   CalendarRange,
   LogOut,
   User,
-  ChevronLeft,
-  CalendarDays
+  ChevronLeft
 } from "lucide-react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useState, useEffect, useRef } from "react";
@@ -89,7 +88,7 @@ const getNavItems = (userRole: string = '') => [
     href: "/excuse-application",
     isActive: (path: string) => path === '/excuse-application'
   },
-  { icon: CalendarDays, label: "Academic Year", href: "/academic-year" },
+  { icon: CalendarRange, label: "Academic Year", href: "/academic-year" },
   ...(userRole === 'admin' ? [{ icon: UserCog, label: "Accounts", href: "/accounts" }] : []),
 ];
 
