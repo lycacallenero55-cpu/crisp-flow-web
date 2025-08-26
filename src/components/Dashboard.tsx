@@ -1,7 +1,7 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { CalendarDays, Users, BookOpen, TrendingUp, CheckCircle2, BarChart3, Clock, Activity, Target, AlertCircle, Calendar } from "lucide-react";
+import { CalendarDays, Users, UserCheck, CalendarCheck2, BarChart3, Percent, CalendarClock, CheckSquare } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
 import { useEffect, useState, useRef, useCallback, useMemo } from "react";
@@ -389,7 +389,7 @@ const Dashboard = () => {
               {loading ? '' : totalStudents.toLocaleString()}
             </div>
             <div className="flex items-center text-sm text-blue-700">
-              <TrendingUp className="h-3 w-3 mr-1" />
+              <BarChart3 className="h-3 w-3 mr-1" />
               +5.2% this month
             </div>
           </CardContent>
@@ -399,7 +399,7 @@ const Dashboard = () => {
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3 px-6 pt-6">
             <CardTitle className="text-sm font-medium text-purple-700">Today's Attendance</CardTitle>
             <div className="p-2 bg-purple-200 rounded-lg group-hover:bg-purple-300 transition-colors">
-              <Activity className="h-4 w-4 text-purple-800" />
+              <UserCheck className="h-4 w-4 text-purple-800" />
             </div>
           </CardHeader>
           <CardContent className="pt-0 px-6 pb-6">
@@ -407,7 +407,7 @@ const Dashboard = () => {
               {realTimeStats.todayAttendance.toLocaleString()}
             </div>
             <div className="flex items-center text-sm text-purple-700">
-              <Target className="h-3 w-3 mr-1" />
+              <CalendarCheck2 className="h-3 w-3 mr-1" />
               {mockYesterdayPresents.toLocaleString()} yesterday
             </div>
           </CardContent>
@@ -417,13 +417,13 @@ const Dashboard = () => {
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3 px-6 pt-6">
             <CardTitle className="text-sm font-medium text-green-700">Attendance Rate</CardTitle>
             <div className="p-2 bg-green-200 rounded-lg group-hover:bg-green-300 transition-colors">
-              <CheckCircle2 className="h-4 w-4 text-green-800" />
+              <BarChart3 className="h-4 w-4 text-green-800" />
             </div>
           </CardHeader>
           <CardContent className="pt-0 px-6 pb-6">
             <div className="text-3xl font-bold text-green-900 mb-1">94.2%</div>
             <div className="flex items-center text-sm text-green-700">
-              <TrendingUp className="h-3 w-3 mr-1" />
+              <Percent className="h-3 w-3 mr-1" />
               {mockYesterdayAttendanceRate}% yesterday
             </div>
           </CardContent>
@@ -433,7 +433,7 @@ const Dashboard = () => {
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3 px-6 pt-6">
             <CardTitle className="text-sm font-medium text-orange-700">Today's Sessions</CardTitle>
             <div className="p-2 bg-orange-200 rounded-lg group-hover:bg-orange-300 transition-colors">
-              <BookOpen className="h-4 w-4 text-orange-800" />
+              <CalendarClock className="h-4 w-4 text-orange-800" />
             </div>
           </CardHeader>
           <CardContent className="pt-0 px-6 pb-6">
@@ -441,7 +441,7 @@ const Dashboard = () => {
               {realTimeStats.activeClasses}
             </div>
             <div className="flex items-center text-sm text-orange-700">
-              <AlertCircle className="h-3 w-3 mr-1" />
+              <CheckSquare className="h-3 w-3 mr-1" />
               {mockCompletedSessionsToday} completed
             </div>
           </CardContent>
@@ -451,7 +451,7 @@ const Dashboard = () => {
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3 px-6 pt-6">
             <CardTitle className="text-sm font-medium text-indigo-700">Academic Year</CardTitle>
             <div className="p-2 bg-indigo-200 rounded-lg group-hover:bg-indigo-300 transition-colors">
-              <Calendar className="h-4 w-4 text-indigo-800" />
+              <CalendarDays className="h-4 w-4 text-indigo-800" />
             </div>
           </CardHeader>
           <CardContent className="pt-0 px-6 pb-6">
@@ -612,9 +612,9 @@ const Dashboard = () => {
                       session.status === 'ongoing' ? 'bg-blue-100' : 'bg-orange-100'
                     }`}>
                       {session.status === 'completed' ? (
-                        <CheckCircle2 className="h-4 w-4 text-green-700" />
+                        <CheckSquare className="h-4 w-4 text-green-700" />
                       ) : session.status === 'ongoing' ? (
-                        <Clock className="h-4 w-4 text-blue-700" />
+                        <CalendarClock className="h-4 w-4 text-blue-700" />
                       ) : (
                         <CalendarDays className="h-4 w-4 text-orange-700" />
                       )}
