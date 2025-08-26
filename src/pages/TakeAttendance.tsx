@@ -17,7 +17,8 @@ import {
   Star,
   RefreshCw,
   BookOpen,
-  Users
+  Users,
+  CalendarClock
 } from "lucide-react";
 import { format, isToday, isTomorrow, addDays, parseISO, isBefore, isAfter, isSameDay } from "date-fns";
 import { DateRange } from "react-day-picker";
@@ -363,7 +364,7 @@ const TakeAttendanceContent: React.FC = () => {
             </div>
           ) : (
             <div className="flex flex-col items-center justify-center py-12 text-center">
-              <CalendarDays className="h-12 w-12 text-muted-foreground mb-4" />
+              <CalendarClock className="h-12 w-12 text-muted-foreground mb-4" />
               <h3 className="text-lg font-medium">No sessions today</h3>
               <p className="text-sm text-muted-foreground">
                 There are no sessions scheduled for today.
@@ -385,7 +386,7 @@ const TakeAttendanceContent: React.FC = () => {
             </div>
           ) : (
             <div className="flex flex-col items-center justify-center py-12 text-center">
-              <CalendarDays className="h-12 w-12 text-muted-foreground mb-4" />
+              <CalendarClock className="h-12 w-12 text-muted-foreground mb-4" />
               <h3 className="text-lg font-medium">No sessions tomorrow</h3>
               <p className="text-sm text-muted-foreground">
                 There are no sessions scheduled for tomorrow.
@@ -407,7 +408,7 @@ const TakeAttendanceContent: React.FC = () => {
             </div>
           ) : (
             <div className="flex flex-col items-center justify-center py-12 text-center">
-              <CalendarDays className="h-12 w-12 text-muted-foreground mb-4" />
+              <CalendarClock className="h-12 w-12 text-muted-foreground mb-4" />
               <h3 className="text-lg font-medium">No upcoming sessions</h3>
               <p className="text-sm text-muted-foreground">
                 There are no upcoming sessions scheduled.
@@ -429,7 +430,7 @@ const TakeAttendanceContent: React.FC = () => {
             </div>
           ) : (
             <div className="flex flex-col items-center justify-center py-12 text-center">
-              <CalendarDays className="h-12 w-12 text-muted-foreground mb-4" />
+              <CalendarClock className="h-12 w-12 text-muted-foreground mb-4" />
               <h3 className="text-lg font-medium">No past sessions</h3>
               <p className="text-sm text-muted-foreground">
                 There are no past sessions to display.
