@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { CalendarIcon, Clock, Users, BookOpen, CalendarClock, Calendar, Star, Loader2 } from "lucide-react";
+import { CalendarIcon, Clock, Users, BookOpen, Calendar, Star, Loader2 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { fetchStudents } from "@/lib/supabaseService";
 
@@ -452,7 +452,7 @@ const AttendanceForm = ({ onSuccess, onSubmit, initialData }: AttendanceFormProp
     <div className="w-full max-w-none mx-auto px-6 py-4">
       <div className="border-b border-border/30 pb-2 mb-3 flex justify-between items-center">
         <h2 className="flex items-center gap-2 text-education-navy text-xl font-semibold">
-          <CalendarClock className="w-5 h-5 text-education-blue" />
+          <CalendarIcon className="w-5 h-5 text-education-blue" />
           {initialData?.id ? 'Edit Session' : 'Create New Session'}
         </h2>
       </div>
