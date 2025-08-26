@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Calendar, CalendarClock, Pencil, Trash2, MoreHorizontal, ChevronDown, Search } from "lucide-react";
+import { Plus, Calendar, CalendarDays, Pencil, Trash2, MoreHorizontal, ChevronDown, Search } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -478,7 +478,7 @@ const AcademicYear = () => {
                       onClick={() => toggleExpand(year.id)}
                     >
                       <div className="flex items-center space-x-4">
-                        <CalendarClock className="h-5 w-5 text-muted-foreground" />
+                        <CalendarDays className="h-5 w-5 text-muted-foreground" />
                         <div>
                           <div className="font-medium flex items-center gap-2">
                             {year.name}
@@ -635,7 +635,7 @@ const AcademicYear = () => {
                           </Table>
                         ) : (
                           <div className="text-center py-8 text-muted-foreground">
-                            <CalendarClock className="mx-auto h-12 w-12 mb-4" />
+                            <CalendarDays className="mx-auto h-12 w-12 mb-4" />
                             <h3 className="text-sm font-medium">No semesters</h3>
                             <p className="text-sm">
                               Add semesters to organize this academic year.
