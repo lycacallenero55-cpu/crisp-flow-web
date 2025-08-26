@@ -155,7 +155,7 @@ const TakeAttendanceContent: React.FC = () => {
         updated_at: session.updated_at || new Date().toISOString(),
         title: session.title || 'Untitled Session',
         description: session.description || '',
-        type: session.type || 'class',
+        type: (session.type as 'class' | 'event' | 'other') || 'class',
         date: session.date,
         time_in: session.time_in || '00:00',
         time_out: session.time_out || '00:00',
@@ -164,9 +164,7 @@ const TakeAttendanceContent: React.FC = () => {
         capacity: session.capacity || 0,
         program: session.program || '',
         year: session.year || '',
-        section: session.section || '',
-        attendees_count: session.attendees_count || 0,
-        enrolled_students: session.enrolled_students || []
+        section: session.section || ''
       }));
       
       setSessions(formattedSessions);

@@ -20,8 +20,6 @@ type Session = {
   date: string;
   time_in: string;
   time_out: string;
-  location: string;
-  instructor: string;
 };
 
 const TakeAttendanceSession = () => {

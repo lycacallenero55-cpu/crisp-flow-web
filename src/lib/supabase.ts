@@ -1,22 +1,6 @@
-import { createClient, type Session, type AuthChangeEvent } from '@supabase/supabase-js';
-import type { Database } from '@/types/supabase';
-
-// Supabase configuration
-const supabaseUrl = 'https://bjqvyoujvjzodtwlqlal.supabase.co';
-const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJqcXZ5b3Vqdmp6b2R0d2xxbGFsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQzMjMyMDQsImV4cCI6MjA2OTg5OTIwNH0.BzQ0wpsO2NEXRXxe66F7J2aeSEoKossrIgUyCo7tpJE';
-
-// Create a single supabase client for interacting with your database
-export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
-  auth: {
-    persistSession: true, // This will save the session in localStorage
-    autoRefreshToken: true,
-    detectSessionInUrl: true,
-    flowType: 'pkce',
-  },
-  global: {
-    headers: { 'x-application-name': 'attendance-system' },
-  },
-});
+import { type Session, type AuthChangeEvent } from '@supabase/supabase-js';
+import { supabase } from '@/integrations/supabase/client';
+export { supabase };
 
 // Helper to get the current user with profile data
 export const getCurrentUser = async () => {
@@ -34,9 +18,9 @@ export const getCurrentUser = async () => {
     user: {
       id: user.id,
       email: user.email || '',
-      name: profile?.full_name || user.user_metadata?.full_name || '',
-      role: profile?.role || 'user',
-      avatar_url: profile?.avatar_url || '',
+      name: `${profile?.first_name || ''} ${profile?.last_name || ''}`.trim(),
+      role: (profile as any)?.role || 'ssg_officer',
+      avatar_url: (profile as any)?.avatar_url || '',
     },
     error,
   };
@@ -69,12 +53,16 @@ export const signUpWithEmail = async (email: string, password: string, userData:
   
   if (error) return { data: null, error };
   
-  // Create a profile for the new user
+  // Create a profile for the new user (trigger also handles this)
   if (data.user) {
+    const [firstName, ...rest] = (userData.name || '').split(' ');
+    const lastName = rest.join(' ');
     await supabase.from('profiles').upsert({
       id: data.user.id,
-      full_name: userData.name,
-      role: 'user', // Default role
+      email: data.user.email || email,
+      first_name: firstName,
+      last_name: lastName,
+      role: 'ssg_officer',
     });
   }
   
