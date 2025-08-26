@@ -17,6 +17,7 @@ import Login from "./pages/Login";
 import ExcuseApplication from "./pages/ExcuseApplication";
 import AcademicYear from "./pages/AcademicYear";
 import Profile from "./pages/Profile";
+import Reports from "./pages/Reports";
 import { AuthProvider } from "./contexts/AuthContext";
 import { SidebarProvider } from "./contexts/SidebarContext";
 import { useAuth } from "./hooks/useAuth";
@@ -148,6 +149,14 @@ const AppRoutes = () => {
       element={
         <ProtectedRoute>
           <Profile />
+        </ProtectedRoute>
+      }
+    />
+    <Route
+      path="/reports"
+      element={
+        <ProtectedRoute>
+          <Reports />
         </ProtectedRoute>
       }
     />
