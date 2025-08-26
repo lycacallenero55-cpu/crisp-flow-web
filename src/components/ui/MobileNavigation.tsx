@@ -5,7 +5,7 @@ import {
   UserCheck, 
   Users, 
   FileText, 
-  Calendar,
+  CalendarClock,
 } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 
@@ -22,7 +22,7 @@ export const MobileNavigation = () => {
     },
     { icon: Users, label: "Students", href: "/students" },
     { 
-      icon: Calendar, 
+      icon: CalendarClock, 
       label: "Schedule", 
       href: "/schedule",
       isActive: (path: string) => path === '/schedule' || path.startsWith('/sessions/') 

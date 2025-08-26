@@ -7,7 +7,7 @@ import {
   UserCheck, 
   Users, 
   FileText, 
-  Calendar,
+  CalendarClock,
   GraduationCap,
   Menu,
   X,
@@ -75,7 +75,7 @@ const getNavItems = (userRole: string = '') => [
     isActive: (path: string) => path === '/take-attendance' || path.startsWith('/take-attendance/')
   },
   { 
-    icon: Calendar, 
+    icon: CalendarClock, 
     label: "Schedule", 
     href: "/schedule",
     isActive: (path: string) => path === '/schedule' || path.startsWith('/sessions/') 
