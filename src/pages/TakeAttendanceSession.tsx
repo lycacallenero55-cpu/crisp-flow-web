@@ -64,7 +64,7 @@ const TakeAttendanceSession = () => {
         const { data, error } = await supabase
           .from('sessions')
           .select('*')
-          .eq('id', sessionId)
+          .eq('id', parseInt(sessionId))
           .single();
 
         if (error) throw error;

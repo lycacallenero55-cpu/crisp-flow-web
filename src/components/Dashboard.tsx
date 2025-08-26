@@ -320,10 +320,10 @@ const Dashboard = () => {
   const getDashboardTitle = () => {
     const roleLabels = {
       admin: 'Admin',
-      instructor: 'Instructor',
-      user: 'User'
+      staff: 'Staff',
+      ssg_officer: 'SSG Officer'
     };
-    return `${roleLabels[userRole] || 'User'} Dashboard`;
+    return `${roleLabels[userRole as keyof typeof roleLabels] || 'User'} Dashboard`;
   };
 
   const getUserDisplayName = () => {

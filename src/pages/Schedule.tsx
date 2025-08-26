@@ -725,8 +725,6 @@ const Schedule = () => {
       time: data.timeIn && data.timeOut ? `${data.timeIn} - ${data.timeOut}` : 'TBD',
       time_in: data.timeIn || '',
       time_out: data.timeOut || '',
-      location: data.venue || 'Not specified',
-      instructor: 'Instructor',
       students: 0,
       program: data.program || 'General',
       year: data.year || 'All Year Levels',
@@ -869,20 +867,10 @@ const Schedule = () => {
             ...sessionForSupabase,
             id: newSession.id,
             time: `${sessionForSupabase.time_in} - ${sessionForSupabase.time_out}`,
-            students: studentCount, // Use calculated student count
+            students: studentCount,
             created_at: newSession.created_at || new Date().toISOString(),
             updated_at: newSession.updated_at || new Date().toISOString(),
-            // Ensure all required fields are included
-            title: sessionForSupabase.title,
-            type: sessionForSupabase.type,
-            time_in: sessionForSupabase.time_in,
-            time_out: sessionForSupabase.time_out,
-            program: sessionForSupabase.program,
-            year: sessionForSupabase.year,
-            section: sessionForSupabase.section,
-            description: sessionForSupabase.description,
-            capacity: sessionForSupabase.capacity,
-            date: sessionForSupabase.date
+            created_by_user_id: newSession.created_by_user_id
           };
           
           // Update the state with the new session - no need to call loadSessions()

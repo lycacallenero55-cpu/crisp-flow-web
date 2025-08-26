@@ -167,8 +167,8 @@ export default function Login() {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="admin">Admin</SelectItem>
-                      <SelectItem value="instructor">Instructor</SelectItem>
-                      <SelectItem value="user">User</SelectItem>
+                      <SelectItem value="staff">Staff</SelectItem>
+                      <SelectItem value="ssg_officer">SSG Officer</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -227,8 +227,8 @@ export default function Login() {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="admin">Admin</SelectItem>
-                      <SelectItem value="instructor">Instructor</SelectItem>
-                      <SelectItem value="user">User</SelectItem>
+                      <SelectItem value="staff">Staff</SelectItem>
+                      <SelectItem value="ssg_officer">SSG Officer</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>

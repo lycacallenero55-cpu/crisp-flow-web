@@ -161,7 +161,7 @@ const TakeAttendanceContent: React.FC = () => {
         time_out: session.time_out || '00:00',
         created_by_user_id: session.created_by_user_id,
         creator: session.creator,
-        capacity: session.capacity || 0,
+        capacity: String(session.capacity || 0),
         program: session.program || '',
         year: session.year || '',
         section: session.section || ''
