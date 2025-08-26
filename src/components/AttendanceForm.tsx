@@ -36,10 +36,38 @@ interface AttendanceFormProps {
 const AttendanceForm = ({ onSuccess, onSubmit, initialData }: AttendanceFormProps) => {
   const { user } = useAuth();
 
-  const currentRole = useMemo(() => {
-    const raw = (user?.user_metadata as any)?.role || (user?.app_metadata as any)?.role || "";
-    return String(raw || "").toLowerCase();
-  }, [user]);
+  const [currentRole, setCurrentRole] = useState<string>("");
+
+  useEffect(() => {
+    let isMounted = true;
+    const resolveRole = async () => {
+      // 1) Try profiles.role (source of truth)
+      if (user?.id) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('role')
+          .eq('id', user.id)
+          .single();
+        const dbRole = String(profile?.role || "").toLowerCase();
+        if (isMounted && dbRole) {
+          setCurrentRole(dbRole);
+          return;
+        }
+      }
+      // 2) Fallbacks: user metadata/app metadata
+      const metaRole = String((user as any)?.user_metadata?.role || (user as any)?.app_metadata?.role || "").toLowerCase();
+      if (isMounted && metaRole) {
+        setCurrentRole(metaRole);
+        return;
+      }
+      // 3) Default: admin if no user? else staff-like conservative default
+      if (isMounted) setCurrentRole("");
+    };
+    resolveRole();
+    return () => {
+      isMounted = false;
+    };
+  }, [user?.id]);
 
   const allowedTypes: AttendanceType[] = useMemo(() => {
     if (currentRole === "admin") return ["class", "event", "other"];
