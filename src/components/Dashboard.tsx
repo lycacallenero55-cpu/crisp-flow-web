@@ -1,7 +1,7 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { CalendarDays, Users, UserCheck, BarChart3, CalendarClock, CheckCircle, TrendingUp, TrendingDown } from "lucide-react";
+import { CalendarDays, Users, UserCheck, BarChart3, CalendarClock, CheckCircle, TrendingUp, TrendingDown, Activity } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
 import { useEffect, useState, useRef, useCallback, useMemo } from "react";
@@ -424,7 +424,7 @@ const Dashboard = () => {
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3 px-6 pt-6">
             <CardTitle className="text-sm font-medium text-green-700">Attendance Rate</CardTitle>
             <div className="p-2 bg-green-200 rounded-lg group-hover:bg-green-300 transition-colors">
-              <BarChart3 className="h-4 w-4 text-green-800" />
+              <Activity className="h-4 w-4 text-green-800" />
             </div>
           </CardHeader>
           <CardContent className="pt-0 px-6 pb-6">
