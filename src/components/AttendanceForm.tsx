@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { toast } from "sonner";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -9,6 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { CalendarIcon, Clock, Users, BookOpen, Calendar, Star, Loader2, CalendarClock } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { fetchStudents } from "@/lib/supabaseService";
+import { useAuth } from "@/hooks/useAuth";
 
 export type AttendanceType = "class" | "event" | "other";
 
@@ -33,6 +34,21 @@ interface AttendanceFormProps {
 }
 
 const AttendanceForm = ({ onSuccess, onSubmit, initialData }: AttendanceFormProps) => {
+  const { user } = useAuth();
+
+  const currentRole = useMemo(() => {
+    const raw = (user?.user_metadata as any)?.role || (user?.app_metadata as any)?.role || "";
+    return String(raw || "").toLowerCase();
+  }, [user]);
+
+  const allowedTypes: AttendanceType[] = useMemo(() => {
+    if (currentRole === "admin") return ["class", "event", "other"];
+    if (currentRole === "staff" || currentRole === "instructor") return ["class"];
+    if (currentRole === "ssg_officer") return ["event", "other"];
+    // default conservative: allow class only
+    return ["class"];
+  }, [currentRole]);
+
   const [attendanceType, setAttendanceType] = useState<AttendanceType>(initialData?.attendanceType || "class");
   const [formData, setFormData] = useState({
     title: initialData?.title || "",
@@ -43,6 +59,13 @@ const AttendanceForm = ({ onSuccess, onSubmit, initialData }: AttendanceFormProp
     timeIn: initialData?.timeIn || "",
     timeOut: initialData?.timeOut || "",
   });
+  
+  // Ensure selected type is allowed for the current role
+  useEffect(() => {
+    if (!allowedTypes.includes(attendanceType)) {
+      setAttendanceType(allowedTypes[0]);
+    }
+  }, [allowedTypes, attendanceType]);
   
   // State for dropdown options
   const [loadingOptions, setLoadingOptions] = useState(false);
@@ -343,7 +366,7 @@ const AttendanceForm = ({ onSuccess, onSubmit, initialData }: AttendanceFormProp
       }
     }
   }, [formData.program, formData.year]); // Simplified dependencies
-  
+
   // Reset year and section when program changes - optimized to prevent unnecessary re-renders
   useEffect(() => {
     if (formData.program && formData.year) {
@@ -464,7 +487,9 @@ const AttendanceForm = ({ onSuccess, onSubmit, initialData }: AttendanceFormProp
             { type: "class" as AttendanceType, label: "Class Session", description: "Regular classroom attendance", bg: "bg-gradient-primary/5", hoverBg: "hover:bg-gradient-primary/10" },
             { type: "event" as AttendanceType, label: "School Event", description: "Assemblies, ceremonies, programs", bg: "bg-gradient-accent/5", hoverBg: "hover:bg-gradient-accent/10" },
             { type: "other" as AttendanceType, label: "Other Activity", description: "Workshops, field trips, meetings", bg: "bg-education-navy/5", hoverBg: "hover:bg-education-navy/10" }
-          ].map((option) => (
+          ]
+            .filter(option => allowedTypes.includes(option.type))
+            .map((option) => (
             <div 
               key={option.type} 
               className={`group relative rounded-lg p-0.5 ${option.bg} ${option.hoverBg} transition-all duration-200 hover:scale-105 hover:shadow-md`}
