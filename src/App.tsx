@@ -15,7 +15,7 @@ import Accounts from "./pages/Accounts";
 import NotFound from "./pages/NotFound";
 import Login from "./pages/Login";
 import ExcuseApplication from "./pages/ExcuseApplication";
-import AcademicYear from "./pages/AcademicYear";
+import AllowedTerms from "./pages/AllowedTerms";
 import Subjects from "./pages/Subjects";
 import Profile from "./pages/Profile";
 import { AuthProvider } from "./contexts/AuthContext";
@@ -139,7 +139,7 @@ const AppRoutes = () => {
       element={
         <ProtectedRoute>
           <RoleProtectedRoute allowedRoles={['admin']}>
-            <AcademicYear />
+            <AllowedTerms />
           </RoleProtectedRoute>
         </ProtectedRoute>
       }

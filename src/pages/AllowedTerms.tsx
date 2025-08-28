@@ -20,7 +20,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
   created_at: string;
 };
 
-const AcademicYear = () => {
+const AllowedTerms = () => {
   const { toast } = useToast();
   const [terms, setTerms] = useState<AllowedTerm[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
@@ -250,4 +250,4 @@ const AcademicYear = () => {
   );
 };
 
-export default AcademicYear;
+export default AllowedTerms;
