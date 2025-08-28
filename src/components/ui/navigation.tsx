@@ -19,7 +19,8 @@ import {
   LogOut,
   User,
   ChevronLeft,
-  CalendarDays
+  CalendarDays,
+  BarChartBig
 } from "lucide-react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useState, useEffect, useRef } from "react";
@@ -82,10 +83,10 @@ const getNavItems = (userRole: string = '') => [
     isActive: (path: string) => path === '/schedule' || path.startsWith('/sessions/') 
   },
   { icon: Users, label: "Students", href: "/students" },
-  { icon: FileText, label: "Reports", href: "/reports" },
+  { icon: BarChartBig, label: "Reports", href: "/reports" },
   ...(['admin', 'instructor', 'staff'].includes(userRole) ? [{ icon: Book, label: "Subjects", href: "/subjects" }] : []),
   { 
-    icon: ClipboardCheck, 
+    icon: FileText, 
     label: "Excuse Application", 
     href: "/excuse-application",
     isActive: (path: string) => path === '/excuse-application'
