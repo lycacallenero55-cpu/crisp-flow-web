@@ -78,7 +78,7 @@ const getNavItems = (userRole: string = '') => [
   },
   { 
     icon: CalendarClock, 
-    label: "Schedule", 
+    label: "Sessions", 
     href: "/schedule",
     isActive: (path: string) => path === '/schedule' || path.startsWith('/sessions/') 
   },

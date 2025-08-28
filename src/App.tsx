@@ -7,7 +7,7 @@ import Index from "./pages/Index";
 import Attendance from "./pages/Attendance";
 import Reports from "./pages/Reports";
 import Students from "./pages/Students";
-import Schedule from "./pages/Schedule";
+import Sessions from "./pages/Sessions";
 import SessionStudents from "./pages/SessionStudents";
 import TakeAttendance from "./pages/TakeAttendance";
 import TakeAttendanceSession from "./pages/TakeAttendanceSession";
@@ -85,7 +85,7 @@ const AppRoutes = () => {
       path="/schedule"
       element={
         <ProtectedRoute>
-          <Schedule />
+          <Sessions />
         </ProtectedRoute>
       }
     />

@@ -28,7 +28,7 @@ export const MobileNavigation = ({ userRole = 'user' }: MobileNavigationProps) =
     { icon: Users, label: "Students", href: "/students" },
     { 
       icon: CalendarClock, 
-      label: "Schedule", 
+      label: "Sessions", 
       href: "/schedule",
       isActive: (path: string) => path === '/schedule' || path.startsWith('/sessions/') 
     },

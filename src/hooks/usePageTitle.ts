@@ -9,7 +9,7 @@ const routeTitles: Record<string, string> = {
   '/attendance': 'Attendance',
   '/reports': 'Reports',
   '/students': 'Students',
-  '/schedule': 'Schedule',
+  '/schedule': 'Sessions',
   '/take-attendance': 'Take Attendance',
   '/accounts': 'Accounts',
   '/excuse-application': 'Excuse Application',
