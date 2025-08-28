@@ -91,7 +91,7 @@ const getNavItems = (userRole: string = '') => [
     href: "/excuse-application",
     isActive: (path: string) => path === '/excuse-application'
   },
-  { icon: CalendarDays, label: "Academic Year", href: "/academic-year" },
+  { icon: CalendarDays, label: "Allowed Terms", href: "/academic-year" },
   ...(userRole === 'admin' ? [{ icon: UserCog, label: "Accounts", href: "/accounts" }] : []),
 ];
 
