@@ -9,6 +9,7 @@ import { format } from "date-fns";
 import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/lib/supabase";
 import Layout from "@/components/Layout";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
  type AllowedTerm = {
   id: string;
@@ -31,6 +32,7 @@ const AcademicYear = () => {
     start_date: string;
     end_date: string;
   }>({ academic_year: '', semester: '', start_date: '', end_date: '' });
+  const [isFormOpen, setIsFormOpen] = useState<boolean>(false);
 
   useEffect(() => {
     fetchAllowedTerms();
@@ -72,6 +74,7 @@ const AcademicYear = () => {
 
       toast({ title: 'Success', description: 'Allowed term added successfully.' });
       setFormData({ academic_year: '', semester: '', start_date: '', end_date: '' });
+      setIsFormOpen(false);
       fetchAllowedTerms();
     } catch (error) {
       console.error('Error creating allowed term:', error);
@@ -107,19 +110,22 @@ const AcademicYear = () => {
             <h2 className="text-3xl font-bold tracking-tight">Allowed Terms</h2>
             <p className="text-muted-foreground">Add and manage allowed academic terms</p>
           </div>
+          <Button 
+            className="bg-gradient-primary shadow-glow h-9"
+            onClick={() => setIsFormOpen(true)}
+          >
+            <Plus className="mr-2 h-4 w-4" /> Add Term
+          </Button>
         </div>
 
-        {/* Quick Add Form */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Calendar className="h-5 w-5" />
-              Add Allowed Term
-            </CardTitle>
-            <CardDescription>Provide academic year, semester, and date range.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="grid gap-4 md:grid-cols-4">
+        {/* Add Term Modal */}
+        <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle>New Allowed Term</DialogTitle>
+              <DialogDescription>Provide academic year, semester, and date range.</DialogDescription>
+            </DialogHeader>
+            <div className="grid gap-4">
               <div className="flex flex-col gap-2">
                 <Label htmlFor="ay">Academic Year</Label>
                 <Input
@@ -138,36 +144,38 @@ const AcademicYear = () => {
                   onChange={(e) => setFormData((p) => ({ ...p, semester: e.target.value }))}
                 />
               </div>
-              <div className="flex flex-col gap-2">
-                <Label htmlFor="start">Start Date</Label>
-                <Input
-                  id="start"
-                  type="date"
-                  value={formData.start_date}
-                  onChange={(e) => setFormData((p) => ({ ...p, start_date: e.target.value }))}
-                />
-              </div>
-              <div className="flex flex-col gap-2">
-                <Label htmlFor="end">End Date</Label>
-                <Input
-                  id="end"
-                  type="date"
-                  value={formData.end_date}
-                  onChange={(e) => setFormData((p) => ({ ...p, end_date: e.target.value }))}
-                />
+              <div className="grid grid-cols-2 gap-4">
+                <div className="flex flex-col gap-2">
+                  <Label htmlFor="start">Start Date</Label>
+                  <Input
+                    id="start"
+                    type="date"
+                    value={formData.start_date}
+                    onChange={(e) => setFormData((p) => ({ ...p, start_date: e.target.value }))}
+                  />
+                </div>
+                <div className="flex flex-col gap-2">
+                  <Label htmlFor="end">End Date</Label>
+                  <Input
+                    id="end"
+                    type="date"
+                    value={formData.end_date}
+                    onChange={(e) => setFormData((p) => ({ ...p, end_date: e.target.value }))}
+                  />
+                </div>
               </div>
             </div>
-            <div className="mt-4 flex justify-end">
-              <Button
-                className="bg-gradient-primary shadow-glow h-9"
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setIsFormOpen(false)}>Cancel</Button>
+              <Button 
                 onClick={handleCreate}
                 disabled={!formData.academic_year || !formData.semester || !formData.start_date || !formData.end_date}
               >
-                <Plus className="mr-2 h-4 w-4" /> Add Term
+                Save
               </Button>
-            </div>
-          </CardContent>
-        </Card>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
 
         {/* Search */}
         <div className="flex items-center space-x-4">
