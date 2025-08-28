@@ -5,7 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import Index from "./pages/Index";
 import Attendance from "./pages/Attendance";
-import Records from "./pages/Records";
+import Reports from "./pages/Reports";
 import Students from "./pages/Students";
 import Schedule from "./pages/Schedule";
 import SessionStudents from "./pages/SessionStudents";
@@ -63,10 +63,10 @@ const AppRoutes = () => {
       }
     />
     <Route
-      path="/records"
+      path="/reports"
       element={
         <ProtectedRoute>
-          <Records />
+          <Reports />
         </ProtectedRoute>
       }
     />

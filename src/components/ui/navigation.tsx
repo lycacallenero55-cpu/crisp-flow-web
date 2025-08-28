@@ -82,7 +82,7 @@ const getNavItems = (userRole: string = '') => [
     isActive: (path: string) => path === '/schedule' || path.startsWith('/sessions/') 
   },
   { icon: Users, label: "Students", href: "/students" },
-  { icon: FileText, label: "Records", href: "/records" },
+  { icon: FileText, label: "Reports", href: "/reports" },
   { 
     icon: ClipboardCheck, 
     label: "Excuse Application", 

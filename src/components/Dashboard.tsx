@@ -310,7 +310,7 @@ const Dashboard = () => {
     if (session.status === 'ongoing') {
       navigate('/take-attendance');
     } else if (session.status === 'completed') {
-      navigate('/records');
+              navigate('/reports');
     } else {
       navigate('/schedule');
     }
@@ -602,7 +602,7 @@ const Dashboard = () => {
               <Button 
                 variant="outline" 
                 size="sm"
-                onClick={() => navigate('/records')}
+                onClick={() => navigate('/reports')}
                 className="h-8 px-3 text-xs"
               >
                 View All

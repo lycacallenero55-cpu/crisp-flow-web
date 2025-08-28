@@ -27,7 +27,7 @@ export const MobileNavigation = () => {
       href: "/schedule",
       isActive: (path: string) => path === '/schedule' || path.startsWith('/sessions/') 
     },
-    { icon: FileText, label: "Records", href: "/records" },
+    { icon: FileText, label: "Reports", href: "/reports" },
   ];
 
   return (
