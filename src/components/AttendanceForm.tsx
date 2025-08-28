@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { toast } from "sonner";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -9,6 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { CalendarIcon, Clock, Users, BookOpen, Calendar, Star, Loader2, CalendarClock } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { fetchStudents } from "@/lib/supabaseService";
+import { useAuth } from "@/hooks/useAuth";
 
 export type AttendanceType = "class" | "event" | "other";
 
@@ -33,6 +34,68 @@ interface AttendanceFormProps {
 }
 
 const AttendanceForm = ({ onSuccess, onSubmit, initialData }: AttendanceFormProps) => {
+  const { user } = useAuth();
+
+  const [currentRole, setCurrentRole] = useState<string>("");
+  const [roleReady, setRoleReady] = useState<boolean>(false);
+
+  // Read cached role (same key used elsewhere)
+  const getCachedUserRole = () => {
+    try {
+      return localStorage.getItem('userRole') || '';
+    } catch {
+      return '';
+    }
+  };
+
+  useEffect(() => {
+    let isMounted = true;
+    const resolveRole = async () => {
+      // 0) Cached role for instant render (prevents initial flicker for known users)
+      const cached = String(getCachedUserRole() || '').toLowerCase();
+      if (isMounted && cached) {
+        setCurrentRole(cached);
+        setRoleReady(true);
+      }
+
+      // 1) Immediate metadata read to avoid flicker when available
+      const metaRole = String((user as any)?.user_metadata?.role || (user as any)?.app_metadata?.role || "").toLowerCase();
+      if (isMounted && metaRole) {
+        setCurrentRole(metaRole);
+        setRoleReady(true);
+      }
+
+      // 2) Try profiles.role (source of truth)
+      if (user?.id) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('role')
+          .eq('id', user.id)
+          .single();
+        const dbRole = String(profile?.role || "").toLowerCase();
+        if (isMounted && dbRole) {
+          setCurrentRole(dbRole);
+          setRoleReady(true);
+          return;
+        }
+      }
+
+      // 3) If nothing found, still mark ready to render with conservative defaults
+      if (isMounted) setRoleReady(true);
+    };
+    resolveRole();
+    return () => {
+      isMounted = false;
+    };
+  }, [user?.id]);
+
+  const allowedTypes: AttendanceType[] = useMemo(() => {
+    if (currentRole === "admin") return ["class", "event", "other"];
+    if (currentRole === "staff" || currentRole === "instructor") return ["class"];
+    if (currentRole === "ssg_officer") return ["event", "other"];
+    return ["class"];
+  }, [currentRole]);
+
   const [attendanceType, setAttendanceType] = useState<AttendanceType>(initialData?.attendanceType || "class");
   const [formData, setFormData] = useState({
     title: initialData?.title || "",
@@ -43,6 +106,13 @@ const AttendanceForm = ({ onSuccess, onSubmit, initialData }: AttendanceFormProp
     timeIn: initialData?.timeIn || "",
     timeOut: initialData?.timeOut || "",
   });
+  
+  // Ensure selected type is allowed for the current role
+  useEffect(() => {
+    if (roleReady && !allowedTypes.includes(attendanceType)) {
+      setAttendanceType(allowedTypes[0]);
+    }
+  }, [roleReady, allowedTypes, attendanceType]);
   
   // State for dropdown options
   const [loadingOptions, setLoadingOptions] = useState(false);
@@ -343,7 +413,7 @@ const AttendanceForm = ({ onSuccess, onSubmit, initialData }: AttendanceFormProp
       }
     }
   }, [formData.program, formData.year]); // Simplified dependencies
-  
+
   // Reset year and section when program changes - optimized to prevent unnecessary re-renders
   useEffect(() => {
     if (formData.program && formData.year) {
@@ -459,53 +529,60 @@ const AttendanceForm = ({ onSuccess, onSubmit, initialData }: AttendanceFormProp
       
       {/* Type Selection */}
       <div className="pb-3">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {[
-            { type: "class" as AttendanceType, label: "Class Session", description: "Regular classroom attendance", bg: "bg-gradient-primary/5", hoverBg: "hover:bg-gradient-primary/10" },
-            { type: "event" as AttendanceType, label: "School Event", description: "Assemblies, ceremonies, programs", bg: "bg-gradient-accent/5", hoverBg: "hover:bg-gradient-accent/10" },
-            { type: "other" as AttendanceType, label: "Other Activity", description: "Workshops, field trips, meetings", bg: "bg-education-navy/5", hoverBg: "hover:bg-education-navy/10" }
-          ].map((option) => (
-            <div 
-              key={option.type} 
-              className={`group relative rounded-lg p-0.5 ${option.bg} ${option.hoverBg} transition-all duration-200 hover:scale-105 hover:shadow-md`}
-            >
+        {roleReady && (
+          <div
+            className="grid gap-4 justify-center mx-auto"
+            style={{ gridTemplateColumns: `repeat(${allowedTypes.length}, minmax(12rem, 1fr))`, maxWidth: '900px' }}
+          >
+            {[
+              { type: "class" as AttendanceType, label: "Class Session", description: "Regular classroom attendance", bg: "bg-gradient-primary/5", hoverBg: "hover:bg-gradient-primary/10" },
+              { type: "event" as AttendanceType, label: "School Event", description: "Assemblies, ceremonies, programs", bg: "bg-gradient-accent/5", hoverBg: "hover:bg-gradient-accent/10" },
+              { type: "other" as AttendanceType, label: "Other Activity", description: "Workshops, field trips, meetings", bg: "bg-education-navy/5", hoverBg: "hover:bg-education-navy/10" }
+            ]
+              .filter(option => allowedTypes.includes(option.type))
+              .map((option) => (
               <div 
-                className={`p-4 rounded-lg cursor-pointer transition-all duration-200 h-full ${
-                  attendanceType === option.type 
-                    ? getTypeColor(option.type) 
-                    : 'bg-white group-hover:bg-white/90 group-hover:shadow-sm'
-                }`}
-                onClick={() => setAttendanceType(option.type)}
+                key={option.type} 
+                className={`group relative rounded-lg p-0.5 ${option.bg} ${option.hoverBg} transition-all duration-200 hover:scale-105 hover:shadow-md w-full`}
               >
-                <div className="flex flex-col items-center gap-1.5">
-                  <div className={`transition-all duration-200 transform ${
+                <div 
+                  className={`p-4 rounded-lg cursor-pointer transition-all duration-200 h-full ${
                     attendanceType === option.type 
-                      ? 'text-white scale-110' 
-                      : 'text-muted-foreground group-hover:text-primary group-hover:scale-110'
-                  }`}>
-                    {getTypeIcon(option.type)}
-                  </div>
-                  <div className="text-center">
-                    <div className={`font-medium text-sm transition-colors duration-200 ${
+                      ? getTypeColor(option.type) 
+                      : 'bg-white group-hover:bg-white/90 group-hover:shadow-sm'
+                  }`}
+                  onClick={() => setAttendanceType(option.type)}
+                >
+                  <div className="flex flex-col items-center gap-1.5">
+                    <div className={`transition-all duration-200 transform ${
                       attendanceType === option.type 
-                        ? 'text-white' 
-                        : 'text-foreground group-hover:text-primary'
+                        ? 'text-white scale-110' 
+                        : 'text-muted-foreground group-hover:text-primary group-hover:scale-110'
                     }`}>
-                      {option.label}
+                      {getTypeIcon(option.type)}
                     </div>
-                    <div className={`text-xs transition-colors duration-200 ${
-                      attendanceType === option.type 
-                        ? 'text-white/90' 
-                        : 'text-muted-foreground group-hover:text-primary/80'
-                    }`}>
-                      {option.description}
+                    <div className="text-center">
+                      <div className={`font-medium text-sm transition-colors duration-200 ${
+                        attendanceType === option.type 
+                          ? 'text-white' 
+                          : 'text-foreground group-hover:text-primary'
+                      }`}>
+                        {option.label}
+                      </div>
+                      <div className={`text-xs transition-colors duration-200 ${
+                        attendanceType === option.type 
+                          ? 'text-white/90' 
+                          : 'text-muted-foreground group-hover:text-primary/80'
+                      }`}>
+                        {option.description}
+                      </div>
                     </div>
                   </div>
                 </div>
               </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Dynamic Form */}
