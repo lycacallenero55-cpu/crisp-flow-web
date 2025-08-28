@@ -83,6 +83,7 @@ const getNavItems = (userRole: string = '') => [
   },
   { icon: Users, label: "Students", href: "/students" },
   { icon: FileText, label: "Reports", href: "/reports" },
+  ...(['admin', 'instructor', 'staff'].includes(userRole) ? [{ icon: Book, label: "Subjects", href: "/subjects" }] : []),
   { 
     icon: ClipboardCheck, 
     label: "Excuse Application", 
