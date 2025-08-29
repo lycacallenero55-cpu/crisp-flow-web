@@ -29,9 +29,9 @@ export const fetchUserRole = async (userId: string | null): Promise<AppRole> => 
   }
   if (adminRec) return 'admin';
 
-  // Then users table for role
+  // Then profiles table for role (this is where roles are actually stored)
   const { data: userRec, error: usersErr } = await supabase
-    .from('users')
+    .from('profiles')
     .select('role')
     .eq('id', userId)
     .maybeSingle();
