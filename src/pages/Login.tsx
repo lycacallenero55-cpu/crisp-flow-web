@@ -176,7 +176,10 @@ export default function Login() {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="login-role">Role</Label>
-                  <Select value={loginRole} onValueChange={setLoginRole}>
+                  <Select
+                    value={loginRole || undefined}
+                    onValueChange={(val) => setLoginRole((prev) => (prev === val ? "" : val))}
+                  >
                     <SelectTrigger>
                       <SelectValue placeholder="Select your role" />
                     </SelectTrigger>
