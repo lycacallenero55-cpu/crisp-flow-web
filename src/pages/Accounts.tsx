@@ -86,18 +86,27 @@ const Accounts = () => {
     if (!user) return;
     
     try {
-      const { data, error } = await supabase
-        .from('profiles')
+      // Try admin first
+      const { data: adminData } = await supabase
+        .from('admin')
         .select('*')
         .eq('id', user.id)
-        .single();
+        .maybeSingle();
+      let data: any = adminData;
+      if (!data) {
+        const { data: userData } = await supabase
+          .from('users')
+          .select('*')
+          .eq('id', user.id)
+          .maybeSingle();
+        data = userData;
+      }
 
-      if (error) throw error;
       setCurrentUserProfile(data);
       
       // If user is admin, load all profiles, otherwise just set their own
-      if (data?.role === 'admin') {
-        loadAllProfiles();
+      if (adminData) {
+        loadAllAccounts();
       } else {
         setProfiles([data]);
         setIsLoading(false);
@@ -109,18 +118,21 @@ const Accounts = () => {
     }
   };
 
-  // Load all profiles (only for admins)
-  const loadAllProfiles = async () => {
+  // Load all accounts (only for admins)
+  const loadAllAccounts = async () => {
     try {
-      const { data, error } = await supabase
-        .from('profiles')
+      const { data: admins } = await supabase
+        .from('admin')
+        .select('*')
+        .order('created_at', { ascending: false });
+      const { data: usersRows } = await supabase
+        .from('users')
         .select('*')
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
-      setProfiles(data || []);
+      setProfiles([...(admins || []), ...(usersRows || [])]);
     } catch (error) {
-      console.error('Error loading profiles:', error);
+      console.error('Error loading accounts:', error);
       toast.error('Failed to load accounts');
     } finally {
       setIsLoading(false);

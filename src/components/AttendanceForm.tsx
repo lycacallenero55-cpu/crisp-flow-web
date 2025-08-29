@@ -65,14 +65,27 @@ const AttendanceForm = ({ onSuccess, onSubmit, initialData }: AttendanceFormProp
         setRoleReady(true);
       }
 
-      // 2) Try profiles.role (source of truth)
+      // 2) Try new admin/users (source of truth)
       if (user?.id) {
-        const { data: profile } = await supabase
-          .from('profiles')
+        // admin check
+        const { data: adminRec } = await supabase
+          .from('admin')
+          .select('id')
+          .eq('id', user.id)
+          .maybeSingle();
+        if (adminRec) {
+          if (isMounted) {
+            setCurrentRole('admin');
+            setRoleReady(true);
+            return;
+          }
+        }
+        const { data: userRec } = await supabase
+          .from('users')
           .select('role')
           .eq('id', user.id)
-          .single();
-        const dbRole = String(profile?.role || "").toLowerCase();
+          .maybeSingle();
+        const dbRole = String(userRec?.role || "").toLowerCase();
         if (isMounted && dbRole) {
           setCurrentRole(dbRole);
           setRoleReady(true);

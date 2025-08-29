@@ -47,14 +47,22 @@ const Profile = () => {
       if (!user) return;
 
       try {
-        const { data: profile, error } = await supabase
-          .from('profiles')
+        // Try admin first
+        const { data: adminData } = await supabase
+          .from('admin')
           .select('*')
           .eq('id', user.id)
-          .single();
-
-        if (error) throw error;
-        setUserProfile(profile);
+          .maybeSingle();
+        if (adminData) {
+          setUserProfile(adminData);
+        } else {
+          const { data: userData } = await supabase
+            .from('users')
+            .select('*')
+            .eq('id', user.id)
+            .maybeSingle();
+          setUserProfile(userData);
+        }
       } catch (error) {
         console.error('Error fetching user profile:', error);
       } finally {
@@ -77,8 +85,10 @@ const Profile = () => {
 
     setIsUpdatingProfile(true);
     try {
+      // Update to the correct table
+      const targetTable = userProfile?.role ? 'users' : 'admin';
       const { error } = await supabase
-        .from('profiles')
+        .from(targetTable)
         .update({
           first_name: editFirstName.trim(),
           last_name: editLastName.trim(),
