@@ -142,6 +142,29 @@ const TakeAttendanceContent: React.FC = () => {
         throw error;
       }
       
+      // Resolve creators from admin/users
+      const creatorIds = Array.from(new Set((data || [])
+        .map((s: any) => s.created_by_user_id)
+        .filter((v: any) => !!v)));
+
+      const creatorsMap = new Map<string, { first_name: string; last_name: string; role: string }>();
+      if (creatorIds.length > 0) {
+        const { data: adminRows } = await supabase
+          .from('admin')
+          .select('id, first_name, last_name')
+          .in('id', creatorIds as any);
+        (adminRows || []).forEach((r: any) => {
+          creatorsMap.set(r.id, { first_name: r.first_name, last_name: r.last_name, role: 'admin' });
+        });
+        const { data: userRows } = await supabase
+          .from('users')
+          .select('id, first_name, last_name, role')
+          .in('id', creatorIds as any);
+        (userRows || []).forEach((r: any) => {
+          creatorsMap.set(r.id, { first_name: r.first_name, last_name: r.last_name, role: r.role || 'user' });
+        });
+      }
+
       // Transform the data
       const formattedSessions: Session[] = (data || []).map(session => ({
         id: session.id,
@@ -154,7 +177,7 @@ const TakeAttendanceContent: React.FC = () => {
         time_in: session.time_in || '00:00',
         time_out: session.time_out || '00:00',
         created_by_user_id: session.created_by_user_id,
-        // Creator details removed; no embedded join available after schema change
+        creator: session.created_by_user_id ? creatorsMap.get(session.created_by_user_id) : undefined,
         capacity: String(session.capacity || 0),
         program: session.program || '',
         year: session.year || '',
@@ -413,7 +436,13 @@ const SessionCard: React.FC<SessionCardProps> = ({ session, onStartAttendance })
             </div>
           </div>
           <div className="space-y-1">
-            {/* Creator display disabled due to schema change (profiles split). Can be restored by fetching from admin/users by created_by_user_id. */}
+            <div className="text-muted-foreground text-ellipsis overflow-hidden">
+              <span className="font-medium">Created by:</span> {
+                session.creator
+                  ? `${session.creator.role} (${session.creator.first_name} ${session.creator.last_name})`
+                  : 'System'
+              }
+            </div>
           </div>
         </div>
         <Button 
