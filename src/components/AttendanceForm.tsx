@@ -74,6 +74,7 @@ const AttendanceForm = ({ onSuccess, onSubmit, initialData }: AttendanceFormProp
 
       // 3) Set final role and mark ready (only one update)
       if (isMounted) {
+        console.log('AttendanceForm: Setting final role:', finalRole || 'user');
         setCurrentRole(finalRole || 'user');
         setRoleReady(true);
       }
