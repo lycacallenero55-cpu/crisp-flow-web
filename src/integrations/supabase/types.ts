@@ -14,36 +14,72 @@ export type Database = {
   }
   public: {
     Tables: {
-      academic_years: {
+      admin: {
         Row: {
-          created_at: string
-          description: string | null
-          end_date: string
+          approved_at: string | null
+          approved_by: string | null
+          created_at: string | null
+          email: string
+          first_name: string
           id: string
-          is_active: boolean
-          name: string
-          start_date: string
-          updated_at: string
+          last_name: string
+          rejected_at: string | null
+          rejected_by: string | null
+          status: string | null
+          updated_at: string | null
         }
         Insert: {
-          created_at?: string
-          description?: string | null
-          end_date: string
+          approved_at?: string | null
+          approved_by?: string | null
+          created_at?: string | null
+          email: string
+          first_name: string
           id?: string
-          is_active?: boolean
-          name: string
-          start_date: string
-          updated_at?: string
+          last_name: string
+          rejected_at?: string | null
+          rejected_by?: string | null
+          status?: string | null
+          updated_at?: string | null
         }
         Update: {
+          approved_at?: string | null
+          approved_by?: string | null
+          created_at?: string | null
+          email?: string
+          first_name?: string
+          id?: string
+          last_name?: string
+          rejected_at?: string | null
+          rejected_by?: string | null
+          status?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      allowed_terms: {
+        Row: {
+          academic_year: string
+          created_at: string
+          end_date: string
+          id: string
+          semester: string
+          start_date: string
+        }
+        Insert: {
+          academic_year: string
           created_at?: string
-          description?: string | null
+          end_date: string
+          id?: string
+          semester: string
+          start_date: string
+        }
+        Update: {
+          academic_year?: string
+          created_at?: string
           end_date?: string
           id?: string
-          is_active?: boolean
-          name?: string
+          semester?: string
           start_date?: string
-          updated_at?: string
         }
         Relationships: []
       }
@@ -216,50 +252,6 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: []
-      }
-      semesters: {
-        Row: {
-          academic_year_id: string
-          created_at: string
-          description: string | null
-          end_date: string
-          id: string
-          is_active: boolean
-          name: string
-          start_date: string
-          updated_at: string
-        }
-        Insert: {
-          academic_year_id: string
-          created_at?: string
-          description?: string | null
-          end_date: string
-          id?: string
-          is_active?: boolean
-          name: string
-          start_date: string
-          updated_at?: string
-        }
-        Update: {
-          academic_year_id?: string
-          created_at?: string
-          description?: string | null
-          end_date?: string
-          id?: string
-          is_active?: boolean
-          name?: string
-          start_date?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "semesters_academic_year_id_fkey"
-            columns: ["academic_year_id"]
-            isOneToOne: false
-            referencedRelation: "academic_years"
-            referencedColumns: ["id"]
-          },
-        ]
       }
       sessions: {
         Row: {
@@ -463,6 +455,51 @@ export type Database = {
             referencedColumns: ["signature_id"]
           },
         ]
+      }
+      users: {
+        Row: {
+          approved_at: string | null
+          approved_by: string | null
+          created_at: string | null
+          email: string
+          first_name: string
+          id: string
+          last_name: string
+          rejected_at: string | null
+          rejected_by: string | null
+          role: string
+          status: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
+          created_at?: string | null
+          email: string
+          first_name: string
+          id?: string
+          last_name: string
+          rejected_at?: string | null
+          rejected_by?: string | null
+          role: string
+          status?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          approved_at?: string | null
+          approved_by?: string | null
+          created_at?: string | null
+          email?: string
+          first_name?: string
+          id?: string
+          last_name?: string
+          rejected_at?: string | null
+          rejected_by?: string | null
+          role?: string
+          status?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
       }
     }
     Views: {
