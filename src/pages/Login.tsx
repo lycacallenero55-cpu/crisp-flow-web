@@ -55,11 +55,17 @@ export default function Login() {
         actualRole = userRec?.role || null;
       }
 
-      // If admin, allow regardless of selected role
-      if (actualRole !== 'admin') {
-        // For non-admin accounts, require matching selected role
+      // Admin: must NOT select any role; allow only when no role is selected
+      if (actualRole === 'admin') {
+        if (loginRole) {
+          toast.error('Invalid credentials or role mismatch.');
+          await supabase.auth.signOut();
+          return;
+        }
+      } else {
+        // Non-admin: must select the correct role
         if (!loginRole || actualRole !== loginRole) {
-          toast.error(`Invalid role selected. Your account role is: ${actualRole || 'unknown'}`);
+          toast.error('Invalid credentials or role mismatch.');
           await supabase.auth.signOut();
           return;
         }
@@ -69,8 +75,7 @@ export default function Login() {
       navigate("/")
     } catch (error) {
       console.error("Error signing in:", error);
-      const errorMessage = error instanceof Error ? error.message : "Failed to sign in. Please check your credentials.";
-      toast.error(errorMessage);
+      toast.error("Invalid credentials or role mismatch.");
     } finally {
       setIsLoading(false);
     }
