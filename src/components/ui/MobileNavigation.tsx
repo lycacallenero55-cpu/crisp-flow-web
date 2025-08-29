@@ -6,13 +6,18 @@ import {
   Users, 
   FileText, 
   CalendarClock,
+  Book,
 } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 
-export const MobileNavigation = () => {
+interface MobileNavigationProps {
+  userRole?: string;
+}
+
+export const MobileNavigation = ({ userRole = 'user' }: MobileNavigationProps) => {
   const location = useLocation();
 
-  const navItems = [
+  const baseNavItems = [
     { icon: LayoutDashboard, label: "Dashboard", href: "/" },
     { 
       icon: UserCheck, 
@@ -23,12 +28,18 @@ export const MobileNavigation = () => {
     { icon: Users, label: "Students", href: "/students" },
     { 
       icon: CalendarClock, 
-      label: "Schedule", 
+      label: "Sessions", 
       href: "/schedule",
       isActive: (path: string) => path === '/schedule' || path.startsWith('/sessions/') 
     },
-    { icon: FileText, label: "Records", href: "/records" },
+    { icon: FileText, label: "Reports", href: "/reports" },
   ];
+
+  const roleBasedItems = [
+    ...(['admin', 'instructor', 'staff'].includes(userRole) ? [{ icon: Book, label: "Subjects", href: "/subjects" }] : []),
+  ];
+
+  const navItems = [...baseNavItems, ...roleBasedItems];
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 bg-card border-t border-border flex justify-around items-center h-16 z-30 md:hidden">

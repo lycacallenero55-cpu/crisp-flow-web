@@ -20,7 +20,7 @@ import {
   Users,
   CalendarClock
 } from "lucide-react";
-import { format, isToday, isTomorrow, addDays, parseISO, isBefore, isAfter, isSameDay } from "date-fns";
+import { format, isToday, parseISO, isBefore, isAfter, isSameDay } from "date-fns";
 import { DateRange } from "react-day-picker";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/lib/supabase";
@@ -218,17 +218,7 @@ const TakeAttendanceContent: React.FC = () => {
     return isSameDay(sessionDate, now);
   });
   
-  const tomorrowsSessions = filteredSessions.filter(session => {
-    const sessionDate = new Date(session.date);
-    return isSameDay(sessionDate, addDays(now, 1));
-  });
-  
-  const upcomingSessions = filteredSessions.filter(session => {
-    const sessionDate = new Date(session.date);
-    return !isSameDay(sessionDate, now) && 
-           !isSameDay(sessionDate, addDays(now, 1)) && 
-           isAfter(sessionDate, now);
-  });
+
   
   const pastSessions = filteredSessions.filter(session => {
     const sessionDate = new Date(session.date);
@@ -325,22 +315,7 @@ const TakeAttendanceContent: React.FC = () => {
               </Badge>
             )}
           </TabsTrigger>
-          <TabsTrigger value="tomorrow" className="relative">
-            Tomorrow
-            {tomorrowsSessions.length > 0 && (
-              <Badge className="ml-2 h-5 w-5 rounded-full bg-primary text-primary-foreground text-xs flex items-center justify-center">
-                {tomorrowsSessions.length}
-              </Badge>
-            )}
-          </TabsTrigger>
-          <TabsTrigger value="upcoming" className="relative">
-            Upcoming
-            {upcomingSessions.length > 0 && (
-              <Badge className="ml-2 h-5 w-5 rounded-full bg-primary text-primary-foreground text-xs flex items-center justify-center">
-                {upcomingSessions.length}
-              </Badge>
-            )}
-          </TabsTrigger>
+
           <TabsTrigger value="past" className="relative">
             Past
             {pastSessions.length > 0 && (
@@ -373,49 +348,7 @@ const TakeAttendanceContent: React.FC = () => {
           )}
         </TabsContent>
 
-        <TabsContent value="tomorrow" className="space-y-4">
-          {tomorrowsSessions.length > 0 ? (
-            <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
-              {tomorrowsSessions.map((session) => (
-                <SessionCard
-                  key={session.id}
-                  session={session}
-                  onStartAttendance={handleStartAttendance}
-                />
-              ))}
-            </div>
-          ) : (
-            <div className="flex flex-col items-center justify-center py-12 text-center">
-              <CalendarClock className="h-12 w-12 text-muted-foreground mb-4" />
-              <h3 className="text-lg font-medium">No sessions tomorrow</h3>
-              <p className="text-sm text-muted-foreground">
-                There are no sessions scheduled for tomorrow.
-              </p>
-            </div>
-          )}
-        </TabsContent>
 
-        <TabsContent value="upcoming" className="space-y-4">
-          {upcomingSessions.length > 0 ? (
-            <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
-              {upcomingSessions.map((session) => (
-                <SessionCard
-                  key={session.id}
-                  session={session}
-                  onStartAttendance={handleStartAttendance}
-                />
-              ))}
-            </div>
-          ) : (
-            <div className="flex flex-col items-center justify-center py-12 text-center">
-              <CalendarClock className="h-12 w-12 text-muted-foreground mb-4" />
-              <h3 className="text-lg font-medium">No upcoming sessions</h3>
-              <p className="text-sm text-muted-foreground">
-                There are no upcoming sessions scheduled.
-              </p>
-            </div>
-          )}
-        </TabsContent>
 
         <TabsContent value="past" className="space-y-4">
           {pastSessions.length > 0 ? (

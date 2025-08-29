@@ -370,7 +370,7 @@ export default function SessionStudents() {
             <div className="flex gap-4 justify-center">
               <Button onClick={() => navigate('/schedule')} variant="outline">
                 <ArrowLeft className="w-4 h-4 mr-2" />
-                Back to Schedule
+                Back to Sessions
               </Button>
               {!error.includes('ID') && (
                 <Button onClick={() => window.location.reload()} variant="default">

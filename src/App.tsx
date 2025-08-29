@@ -5,9 +5,9 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import Index from "./pages/Index";
 import Attendance from "./pages/Attendance";
-import Records from "./pages/Records";
+import Reports from "./pages/Reports";
 import Students from "./pages/Students";
-import Schedule from "./pages/Schedule";
+import Sessions from "./pages/Sessions";
 import SessionStudents from "./pages/SessionStudents";
 import TakeAttendance from "./pages/TakeAttendance";
 import TakeAttendanceSession from "./pages/TakeAttendanceSession";
@@ -15,7 +15,8 @@ import Accounts from "./pages/Accounts";
 import NotFound from "./pages/NotFound";
 import Login from "./pages/Login";
 import ExcuseApplication from "./pages/ExcuseApplication";
-import AcademicYear from "./pages/AcademicYear";
+import AllowedTerms from "./pages/AllowedTerms";
+import Subjects from "./pages/Subjects";
 import Profile from "./pages/Profile";
 import { AuthProvider } from "./contexts/AuthContext";
 import { SidebarProvider } from "./contexts/SidebarContext";
@@ -63,10 +64,10 @@ const AppRoutes = () => {
       }
     />
     <Route
-      path="/records"
+      path="/reports"
       element={
         <ProtectedRoute>
-          <Records />
+          <Reports />
         </ProtectedRoute>
       }
     />
@@ -84,7 +85,7 @@ const AppRoutes = () => {
       path="/schedule"
       element={
         <ProtectedRoute>
-          <Schedule />
+          <Sessions />
         </ProtectedRoute>
       }
     />
@@ -138,7 +139,17 @@ const AppRoutes = () => {
       element={
         <ProtectedRoute>
           <RoleProtectedRoute allowedRoles={['admin']}>
-            <AcademicYear />
+            <AllowedTerms />
+          </RoleProtectedRoute>
+        </ProtectedRoute>
+      }
+    />
+    <Route
+      path="/subjects"
+      element={
+        <ProtectedRoute>
+          <RoleProtectedRoute allowedRoles={['admin', 'instructor', 'staff']}>
+            <Subjects />
           </RoleProtectedRoute>
         </ProtectedRoute>
       }

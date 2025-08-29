@@ -97,6 +97,8 @@ interface Session extends Omit<SessionType, 'time_in' | 'time_out' | 'capacity'>
   location: string;
   instructor: string;
   students: number;
+  present?: number;
+  absent?: number;
   program: string;
   year: string;
   section: string;
@@ -349,13 +351,27 @@ const Schedule = () => {
         studentCountMap.set(`${program}::${year}::${section}`, count);
       });
       
-      // 6. Format sessions with student counts
+      // 6. Fetch attendance counts per session and format
+      const attendanceCountsPromises = sessions.map(async (s) => {
+        const { data: att, error: attErr } = await supabase
+          .from('attendance')
+          .select('status', { count: 'exact' })
+          .eq('session_id', s.id);
+        if (attErr) return { sessionId: s.id, present: 0, absent: 0 };
+        const present = (att || []).filter((a: any) => a.status === 'present').length;
+        const absent = (att || []).filter((a: any) => a.status === 'absent').length;
+        return { sessionId: s.id, present, absent };
+      });
+      const attendanceCounts = await Promise.all(attendanceCountsPromises);
+      const attendanceMap = new Map(attendanceCounts.map(a => [a.sessionId, a]));
+
       const formattedSessions = sessions.map(session => {
         const program = session.program || 'All Programs';
         const year = session.year || 'All Year Levels';
         const section = session.section || 'All Sections';
         const sessionKey = `${program}::${year}::${section}`;
         const studentCount = studentCountMap.get(sessionKey) || 0;
+        const att = attendanceMap.get(session.id) || { present: 0, absent: 0 };
         
         return {
           id: session.id,
@@ -367,6 +383,8 @@ const Schedule = () => {
             ? `${formatTime(session.time_in)} - ${formatTime(session.time_out)}` 
             : '',
           students: studentCount,
+          present: att.present,
+          absent: att.absent,
           program: session.program || 'General',
           year: session.year || 'All Year Levels',
           section: session.section || 'All Sections',
@@ -1279,7 +1297,7 @@ const Schedule = () => {
                 <Card key={session.id} className="bg-gradient-card border-0 shadow-card hover:shadow-elegant transition-all duration-300">
                   <CardContent className="p-3">
                     <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
+                      <div className="flex items-start gap-3">
                         <div className="p-2 rounded-lg bg-gradient-primary/10">
                           {getTypeIcon(session.type)}
                         </div>
@@ -1287,19 +1305,10 @@ const Schedule = () => {
                           <div className="flex items-center gap-1.5 mb-0.5">
                             <h4 className="font-medium text-education-navy text-sm">{session.title}</h4>
                             {getTypeBadge(session.type)}
-                            <span className="text-xs text-muted-foreground ml-2">
-                              {format(new Date(session.date), 'MMM d, yyyy')}
-                            </span>
                           </div>
-                          <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                            <div className="flex items-center gap-1">
-                              <Clock className="w-2.5 h-2.5" />
-                              {session.time}
-                            </div>
-                            <div className="flex items-center gap-1">
-                              <Users className="w-2.5 h-2.5" />
-                              {session.students} students
-                            </div>
+                          <div className="text-xs text-muted-foreground">
+                            <span className="mr-3">{format(new Date(session.date), 'MMM d, yyyy')}</span>
+                            <span className="inline-flex items-center gap-1"><Clock className="w-2.5 h-2.5" />{session.time}</span>
                           </div>
                           <p className="text-xs text-muted-foreground mt-0.5">
                             {session.program} • {session.year}
@@ -1308,34 +1317,54 @@ const Schedule = () => {
                         </div>
                       </div>
 
-                      <div className="flex gap-1">
-                        <Button 
-                          variant="outline" 
-                          size="sm"
-                          className="h-8 w-8 p-0"
-                          onClick={() => navigate(`/sessions/${session.id}/students`)}
-                          title="View Students"
-                        >
-                          <Users className="h-4 w-4" />
-                        </Button>
-                        <Button 
-                          variant="outline"
-                          size="sm"
-                          className="h-8 w-8 p-0"
-                          onClick={() => handleEditSession(session)}
-                          title="Edit Session"
-                        >
-                          <SquarePen className="h-4 w-4" />
-                        </Button>
-                        <Button 
-                          variant="outline"
-                          size="sm"
-                          className="h-8 w-8 p-0 text-destructive hover:text-destructive"
-                          onClick={() => confirmDeleteSession(session.id)}
-                          title="Delete Session"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
+                      <div className="flex items-center gap-6">
+                        <div className="hidden sm:flex flex-wrap items-center gap-6">
+                          <div className="text-center">
+                            <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                              <Users className="w-3.5 h-3.5" />
+                              <span>Students</span>
+                            </div>
+                            <div className="text-sm font-bold text-education-navy">{session.students}</div>
+                          </div>
+                          <div className="text-center">
+                            <div className="text-xs text-muted-foreground">Present</div>
+                            <div className="text-sm font-bold text-accent">{session.present ?? 0}</div>
+                          </div>
+                          <div className="text-center">
+                            <div className="text-xs text-muted-foreground">Absent</div>
+                            <div className="text-sm font-bold text-destructive">{session.absent ?? 0}</div>
+                          </div>
+                        </div>
+
+                        <div className="flex gap-1">
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            className="h-8 w-8 p-0"
+                            onClick={() => navigate(`/sessions/${session.id}/students`)}
+                            title="View Students"
+                          >
+                            <Users className="h-4 w-4" />
+                          </Button>
+                          <Button 
+                            variant="outline"
+                            size="sm"
+                            className="h-8 w-8 p-0"
+                            onClick={() => handleEditSession(session)}
+                            title="Edit Session"
+                          >
+                            <SquarePen className="h-4 w-4" />
+                          </Button>
+                          <Button 
+                            variant="outline"
+                            size="sm"
+                            className="h-8 w-8 p-0 text-destructive hover:text-destructive"
+                            onClick={() => confirmDeleteSession(session.id)}
+                            title="Delete Session"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
                       </div>
                     </div>
                   </CardContent>
