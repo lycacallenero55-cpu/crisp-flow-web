@@ -78,14 +78,14 @@ const AttendanceForm = ({ onSuccess, onSubmit, initialData }: AttendanceFormProp
           if (adminRec) {
             finalRole = 'admin';
           } else {
-            // Check profiles table (this is where roles are actually stored)
-            const { data: profileRec } = await supabase
-              .from('profiles')
+            // Check users table
+            const { data: userRec } = await supabase
+              .from('users')
               .select('role')
               .eq('id', user.id)
               .maybeSingle();
             
-            const dbRole = String(profileRec?.role || "").toLowerCase();
+            const dbRole = String(userRec?.role || "").toLowerCase();
             if (dbRole) {
               finalRole = dbRole;
             }
@@ -97,6 +97,7 @@ const AttendanceForm = ({ onSuccess, onSubmit, initialData }: AttendanceFormProp
 
       // 4) Set final role and mark ready (only one update)
       if (isMounted) {
+        console.log('AttendanceForm: Setting final role:', finalRole || 'user');
         setCurrentRole(finalRole || 'user');
         setRoleReady(true);
       }
@@ -110,20 +111,24 @@ const AttendanceForm = ({ onSuccess, onSubmit, initialData }: AttendanceFormProp
 
   const allowedTypes: AttendanceType[] = useMemo(() => {
     const normalizedRole = currentRole.toLowerCase().trim();
+    console.log('AttendanceForm: Determining allowed types for role:', normalizedRole);
     
     if (normalizedRole === "admin") {
+      console.log('AttendanceForm: Admin role detected - allowing all types');
       return ["class", "event", "other"];
     }
     
-    if (normalizedRole === "staff") {
+    if (normalizedRole === "staff" || normalizedRole === "instructor") {
+      console.log('AttendanceForm: Instructor role detected - allowing class only');
       return ["class"];
     }
     
-    if (normalizedRole === "ssg_officer") {
+    if (normalizedRole === "ssg officer" || normalizedRole === "ssg_officer" || normalizedRole === "ssg") {
+      console.log('AttendanceForm: SSG Officer role detected - allowing event and other');
       return ["event", "other"];
     }
     
-    // Default for unknown roles
+    console.log('AttendanceForm: Default role - allowing class only');
     return ["class"];
   }, [currentRole]);
 
@@ -133,7 +138,7 @@ const AttendanceForm = ({ onSuccess, onSubmit, initialData }: AttendanceFormProp
     }
     // Set default based on cached role if available
     const cached = getCachedUserRole().toLowerCase().trim();
-    if (cached === "ssg_officer") {
+    if (cached === "ssg officer" || cached === "ssg_officer" || cached === "ssg") {
       return "event";
     }
     return "class";
@@ -155,7 +160,7 @@ const AttendanceForm = ({ onSuccess, onSubmit, initialData }: AttendanceFormProp
       if (!allowedTypes.includes(attendanceType)) {
         // For SSG officers, prefer "event" as default, for instructors prefer "class"
         const normalizedRole = currentRole.toLowerCase().trim();
-        if (normalizedRole === "ssg_officer") {
+        if (normalizedRole === "ssg officer" || normalizedRole === "ssg_officer" || normalizedRole === "ssg") {
           setAttendanceType(allowedTypes.includes("event") ? "event" : allowedTypes[0]);
         } else {
           setAttendanceType(allowedTypes[0]);
