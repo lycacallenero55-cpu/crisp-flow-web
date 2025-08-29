@@ -92,8 +92,12 @@ const Accounts = () => {
         .select('*')
         .eq('id', user.id)
         .maybeSingle();
+      
       let data: any = adminData;
-      if (!data) {
+      if (adminData) {
+        // Explicitly set role to 'admin' for admin users
+        data = { ...adminData, role: 'admin' };
+      } else {
         const { data: userData } = await supabase
           .from('users')
           .select('*')
@@ -130,7 +134,10 @@ const Accounts = () => {
         .select('*')
         .order('created_at', { ascending: false });
 
-      setProfiles([...(admins || []), ...(usersRows || [])]);
+      // Explicitly set role to 'admin' for admin users
+      const adminProfiles = (admins || []).map(admin => ({ ...admin, role: 'admin' as UserRole }));
+      
+      setProfiles([...adminProfiles, ...(usersRows || [])]);
     } catch (error) {
       console.error('Error loading accounts:', error);
       toast.error('Failed to load accounts');
