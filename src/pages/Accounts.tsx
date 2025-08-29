@@ -243,29 +243,6 @@ const Accounts = () => {
                   onChange={(e) => setSearchTerm(e.target.value)}
                 />
               </div>
-              <Select value={selectedRole} onValueChange={setSelectedRole}>
-                <SelectTrigger className="h-10 min-w-[140px] border-border hover:bg-muted/80 transition-colors duration-200">
-                  <SelectValue placeholder="Filter by role" />
-                </SelectTrigger>
-                <SelectContent className="bg-popover border-border shadow-elegant">
-                  <SelectItem value="all">All Roles</SelectItem>
-                  <SelectItem value="admin">Admin</SelectItem>
-                  <SelectItem value="staff">Staff</SelectItem>
-                  <SelectItem value="ssg_officer">SSG Officer</SelectItem>
-                </SelectContent>
-              </Select>
-              <Select value={selectedStatus} onValueChange={setSelectedStatus}>
-                <SelectTrigger className="h-10 min-w-[140px] border-border hover:bg-muted/80 transition-colors duration-200">
-                  <SelectValue placeholder="Filter by status" />
-                </SelectTrigger>
-                <SelectContent className="bg-popover border-border shadow-elegant">
-                  <SelectItem value="all">All Statuses</SelectItem>
-                  <SelectItem value="pending">Pending</SelectItem>
-                  <SelectItem value="active">Active</SelectItem>
-                  <SelectItem value="inactive">Inactive</SelectItem>
-                  <SelectItem value="suspended">Suspended</SelectItem>
-                </SelectContent>
-              </Select>
             </div>
           </div>
         )}
