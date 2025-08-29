@@ -51,51 +51,58 @@ const AttendanceForm = ({ onSuccess, onSubmit, initialData }: AttendanceFormProp
   useEffect(() => {
     let isMounted = true;
     const resolveRole = async () => {
-      // 0) Cached role for instant render (prevents initial flicker for known users)
+      let finalRole = '';
+
+      // 1) Check cached role first for immediate UI
       const cached = String(getCachedUserRole() || '').toLowerCase();
-      if (isMounted && cached) {
-        setCurrentRole(cached);
-        setRoleReady(true);
+      if (cached) {
+        finalRole = cached;
       }
 
-      // 1) Immediate metadata read to avoid flicker when available
+      // 2) Check metadata
       const metaRole = String((user as any)?.user_metadata?.role || (user as any)?.app_metadata?.role || "").toLowerCase();
-      if (isMounted && metaRole) {
-        setCurrentRole(metaRole);
+      if (metaRole) {
+        finalRole = metaRole;
+      }
+
+      // 3) Check database as source of truth
+      if (user?.id) {
+        try {
+          // Check admin table first
+          const { data: adminRec } = await supabase
+            .from('admin')
+            .select('id')
+            .eq('id', user.id)
+            .maybeSingle();
+          
+          if (adminRec) {
+            finalRole = 'admin';
+          } else {
+            // Check users table
+            const { data: userRec } = await supabase
+              .from('users')
+              .select('role')
+              .eq('id', user.id)
+              .maybeSingle();
+            
+            const dbRole = String(userRec?.role || "").toLowerCase();
+            if (dbRole) {
+              finalRole = dbRole;
+            }
+          }
+        } catch (error) {
+          console.error('Error resolving user role:', error);
+        }
+      }
+
+      // 4) Set final role and mark ready (only one update)
+      if (isMounted) {
+        console.log('AttendanceForm: Setting final role:', finalRole || 'user');
+        setCurrentRole(finalRole || 'user');
         setRoleReady(true);
       }
-
-      // 2) Try new admin/users (source of truth)
-      if (user?.id) {
-        // admin check
-        const { data: adminRec } = await supabase
-          .from('admin')
-          .select('id')
-          .eq('id', user.id)
-          .maybeSingle();
-        if (adminRec) {
-          if (isMounted) {
-            setCurrentRole('admin');
-            setRoleReady(true);
-            return;
-          }
-        }
-        const { data: userRec } = await supabase
-          .from('users')
-          .select('role')
-          .eq('id', user.id)
-          .maybeSingle();
-        const dbRole = String(userRec?.role || "").toLowerCase();
-        if (isMounted && dbRole) {
-          setCurrentRole(dbRole);
-          setRoleReady(true);
-          return;
-        }
-      }
-
-      // 3) If nothing found, still mark ready to render with conservative defaults
-      if (isMounted) setRoleReady(true);
     };
+    
     resolveRole();
     return () => {
       isMounted = false;
@@ -103,13 +110,39 @@ const AttendanceForm = ({ onSuccess, onSubmit, initialData }: AttendanceFormProp
   }, [user?.id]);
 
   const allowedTypes: AttendanceType[] = useMemo(() => {
-    if (currentRole === "admin") return ["class", "event", "other"];
-    if (currentRole === "staff" || currentRole === "instructor") return ["class"];
-    if (currentRole === "ssg_officer") return ["event", "other"];
+    const normalizedRole = currentRole.toLowerCase().trim();
+    console.log('AttendanceForm: Determining allowed types for role:', normalizedRole);
+    
+    if (normalizedRole === "admin") {
+      console.log('AttendanceForm: Admin role detected - allowing all types');
+      return ["class", "event", "other"];
+    }
+    
+    if (normalizedRole === "staff" || normalizedRole === "instructor") {
+      console.log('AttendanceForm: Instructor role detected - allowing class only');
+      return ["class"];
+    }
+    
+    if (normalizedRole === "ssg officer" || normalizedRole === "ssg_officer" || normalizedRole === "ssg") {
+      console.log('AttendanceForm: SSG Officer role detected - allowing event and other');
+      return ["event", "other"];
+    }
+    
+    console.log('AttendanceForm: Default role - allowing class only');
     return ["class"];
   }, [currentRole]);
 
-  const [attendanceType, setAttendanceType] = useState<AttendanceType>(initialData?.attendanceType || "class");
+  const [attendanceType, setAttendanceType] = useState<AttendanceType>(() => {
+    if (initialData?.attendanceType) {
+      return initialData.attendanceType;
+    }
+    // Set default based on cached role if available
+    const cached = getCachedUserRole().toLowerCase().trim();
+    if (cached === "ssg officer" || cached === "ssg_officer" || cached === "ssg") {
+      return "event";
+    }
+    return "class";
+  });
   const [formData, setFormData] = useState({
     title: initialData?.title || "",
     program: initialData?.program || "",
@@ -120,12 +153,21 @@ const AttendanceForm = ({ onSuccess, onSubmit, initialData }: AttendanceFormProp
     timeOut: initialData?.timeOut || "",
   });
   
-  // Ensure selected type is allowed for the current role
+  // Ensure selected type is allowed for the current role, but only change if truly necessary
   useEffect(() => {
-    if (roleReady && !allowedTypes.includes(attendanceType)) {
-      setAttendanceType(allowedTypes[0]);
+    if (roleReady && allowedTypes.length > 0) {
+      // Only change if the current selection is not allowed
+      if (!allowedTypes.includes(attendanceType)) {
+        // For SSG officers, prefer "event" as default, for instructors prefer "class"
+        const normalizedRole = currentRole.toLowerCase().trim();
+        if (normalizedRole === "ssg officer" || normalizedRole === "ssg_officer" || normalizedRole === "ssg") {
+          setAttendanceType(allowedTypes.includes("event") ? "event" : allowedTypes[0]);
+        } else {
+          setAttendanceType(allowedTypes[0]);
+        }
+      }
     }
-  }, [roleReady, allowedTypes, attendanceType]);
+  }, [roleReady, allowedTypes, attendanceType, currentRole]);
   
   // State for dropdown options
   const [loadingOptions, setLoadingOptions] = useState(false);
