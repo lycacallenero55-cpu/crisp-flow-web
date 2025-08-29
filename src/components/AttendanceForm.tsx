@@ -10,6 +10,7 @@ import { CalendarIcon, Clock, Users, BookOpen, Calendar, Star, Loader2, Calendar
 import { supabase } from "@/lib/supabase";
 import { fetchStudents } from "@/lib/supabaseService";
 import { useAuth } from "@/hooks/useAuth";
+import { fetchUserRole } from "@/lib/getUserRole";
 
 export type AttendanceType = "class" | "event" | "other";
 
@@ -54,48 +55,24 @@ const AttendanceForm = ({ onSuccess, onSubmit, initialData }: AttendanceFormProp
       let finalRole = '';
 
       // 1) Check cached role first for immediate UI
-      const cached = String(getCachedUserRole() || '').toLowerCase();
+      const cached = getCachedUserRole();
       if (cached) {
         finalRole = cached;
       }
 
-      // 2) Check metadata
-      const metaRole = String((user as any)?.user_metadata?.role || (user as any)?.app_metadata?.role || "").toLowerCase();
-      if (metaRole) {
-        finalRole = metaRole;
-      }
-
-      // 3) Check database as source of truth
+      // 2) Check database using fetchUserRole (handles admin and users tables correctly)
       if (user?.id) {
         try {
-          // Check admin table first
-          const { data: adminRec } = await supabase
-            .from('admin')
-            .select('id')
-            .eq('id', user.id)
-            .maybeSingle();
-          
-          if (adminRec) {
-            finalRole = 'admin';
-          } else {
-            // Check profiles table (this is where roles are actually stored)
-            const { data: profileRec } = await supabase
-              .from('profiles')
-              .select('role')
-              .eq('id', user.id)
-              .maybeSingle();
-            
-            const dbRole = String(profileRec?.role || "").toLowerCase();
-            if (dbRole) {
-              finalRole = dbRole;
-            }
+          const dbRole = await fetchUserRole(user.id);
+          if (dbRole) {
+            finalRole = dbRole;
           }
         } catch (error) {
           console.error('Error resolving user role:', error);
         }
       }
 
-      // 4) Set final role and mark ready (only one update)
+      // 3) Set final role and mark ready (only one update)
       if (isMounted) {
         setCurrentRole(finalRole || 'user');
         setRoleReady(true);
@@ -109,17 +86,16 @@ const AttendanceForm = ({ onSuccess, onSubmit, initialData }: AttendanceFormProp
   }, [user?.id]);
 
   const allowedTypes: AttendanceType[] = useMemo(() => {
-    const normalizedRole = currentRole.toLowerCase().trim();
-    
-    if (normalizedRole === "admin") {
+    // Use the exact normalized role values from getUserRole.ts
+    if (currentRole === "admin") {
       return ["class", "event", "other"];
     }
     
-    if (normalizedRole === "staff") {
+    if (currentRole === "Instructor") {
       return ["class"];
     }
     
-    if (normalizedRole === "ssg_officer") {
+    if (currentRole === "SSG officer") {
       return ["event", "other"];
     }
     
@@ -132,8 +108,8 @@ const AttendanceForm = ({ onSuccess, onSubmit, initialData }: AttendanceFormProp
       return initialData.attendanceType;
     }
     // Set default based on cached role if available
-    const cached = getCachedUserRole().toLowerCase().trim();
-    if (cached === "ssg_officer") {
+    const cached = getCachedUserRole();
+    if (cached === "SSG officer") {
       return "event";
     }
     return "class";
@@ -154,8 +130,7 @@ const AttendanceForm = ({ onSuccess, onSubmit, initialData }: AttendanceFormProp
       // Only change if the current selection is not allowed
       if (!allowedTypes.includes(attendanceType)) {
         // For SSG officers, prefer "event" as default, for instructors prefer "class"
-        const normalizedRole = currentRole.toLowerCase().trim();
-        if (normalizedRole === "ssg_officer") {
+        if (currentRole === "SSG officer") {
           setAttendanceType(allowedTypes.includes("event") ? "event" : allowedTypes[0]);
         } else {
           setAttendanceType(allowedTypes[0]);
