@@ -28,11 +28,6 @@ export default function Login() {
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!loginRole) {
-      toast.error("Please select a role");
-      return;
-    }
-    
     setIsLoading(true);
 
     try {
@@ -60,11 +55,14 @@ export default function Login() {
         actualRole = userRec?.role || null;
       }
 
-      if (!actualRole || actualRole !== loginRole) {
-        toast.error(`Invalid role selected. Your account role is: ${actualRole || 'unknown'}`);
-        // Sign out the user since role doesn't match
-        await supabase.auth.signOut();
-        return;
+      // If admin, allow regardless of selected role
+      if (actualRole !== 'admin') {
+        // For non-admin accounts, require matching selected role
+        if (!loginRole || actualRole !== loginRole) {
+          toast.error(`Invalid role selected. Your account role is: ${actualRole || 'unknown'}`);
+          await supabase.auth.signOut();
+          return;
+        }
       }
       
       toast.success("Successfully logged in!");
@@ -173,12 +171,11 @@ export default function Login() {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="login-role">Role</Label>
-                  <Select value={loginRole} onValueChange={setLoginRole} required>
+                  <Select value={loginRole} onValueChange={setLoginRole}>
                     <SelectTrigger>
                       <SelectValue placeholder="Select your role" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="admin">Admin</SelectItem>
                       <SelectItem value="Instructor">Instructor</SelectItem>
                       <SelectItem value="SSG officer">SSG Officer</SelectItem>
                       <SelectItem value="ROTC admin">ROTC Admin</SelectItem>
