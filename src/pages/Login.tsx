@@ -14,6 +14,7 @@ import { supabase } from "@/lib/supabase";
 export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [role, setRole] = useState("");
@@ -59,7 +60,7 @@ export default function Login() {
       }
 
       if (!actualRole || actualRole !== loginRole) {
-        toast.error(`Invalid role selected. Your account role is: ${profile.role}`);
+        toast.error(`Invalid role selected. Your account role is: ${actualRole || 'unknown'}`);
         // Sign out the user since role doesn't match
         await supabase.auth.signOut();
         return;
@@ -80,6 +81,10 @@ export default function Login() {
     e.preventDefault();
     if (!role) {
       toast.error("Please select a role");
+      return;
+    }
+    if (password !== confirmPassword) {
+      toast.error("Passwords do not match");
       return;
     }
     
@@ -112,7 +117,7 @@ export default function Login() {
           </CardDescription>
         </CardHeader>
         <Tabs defaultValue="signin" className="w-full">
-          <TabsList className="grid w-full grid-cols-2 mb-4">
+          <TabsList className="grid w-full grid-cols-2 mb-4 px-6">
             <TabsTrigger value="signin">Sign In</TabsTrigger>
             <TabsTrigger value="signup">Sign Up</TabsTrigger>
           </TabsList>
@@ -172,9 +177,10 @@ export default function Login() {
                       <SelectValue placeholder="Select your role" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="admin">Admin</SelectItem>
-                      <SelectItem value="staff">Staff</SelectItem>
-                      <SelectItem value="ssg_officer">SSG Officer</SelectItem>
+                      <SelectItem value="Instructor">Instructor</SelectItem>
+                      <SelectItem value="SSG officer">SSG Officer</SelectItem>
+                      <SelectItem value="ROTC admin">ROTC Admin</SelectItem>
+                      <SelectItem value="ROTC officer">ROTC Officer</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -226,20 +232,6 @@ export default function Login() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="role">Role</Label>
-                  <Select value={role} onValueChange={setRole} required>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select your role" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Instructor">Instructor</SelectItem>
-                      <SelectItem value="SSG officer">SSG Officer</SelectItem>
-                      <SelectItem value="ROTC admin">ROTC Admin</SelectItem>
-                      <SelectItem value="ROTC officer">ROTC Officer</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
                   <Label htmlFor="signup-password">Password</Label>
                   <div className="relative">
                     <Input
@@ -267,6 +259,30 @@ export default function Login() {
                       </span>
                     </Button>
                   </div>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="signup-confirm-password">Confirm Password</Label>
+                  <Input
+                    id="signup-confirm-password"
+                    type={showPassword ? "text" : "password"}
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="role">Role</Label>
+                  <Select value={role} onValueChange={setRole} required>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select your role" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Instructor">Instructor</SelectItem>
+                      <SelectItem value="SSG officer">SSG Officer</SelectItem>
+                      <SelectItem value="ROTC admin">ROTC Admin</SelectItem>
+                      <SelectItem value="ROTC officer">ROTC Officer</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
               </CardContent>
               <CardFooter>
