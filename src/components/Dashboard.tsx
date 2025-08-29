@@ -7,6 +7,7 @@ import { useNavigate } from "react-router-dom";
 import { useEffect, useState, useRef, useCallback, useMemo } from "react";
 import { supabase } from "@/lib/supabase";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { fetchUserRole } from "@/lib/getUserRole";
 
 // Use the same role caching system as navigation
 const getCachedUserRole = (): string | null => {
@@ -218,7 +219,7 @@ const Dashboard = () => {
   }, []);
 
   useEffect(() => {
-    fetchUserProfile();
+    loadUser();
     fetchTotalStudents();
     fetchRecentSessions();
     fetchRealTimeStats();
@@ -228,7 +229,7 @@ const Dashboard = () => {
     setChartData(generateMockData(timePeriod));
   }, [user, timePeriod]);
 
-  const fetchUserProfile = async () => {
+  const loadUser = async () => {
     // If we have cached role for the same user, don't refetch
     if (cachedUserRole && cachedUserId === user?.id) {
       setUserRole(cachedUserRole);
@@ -246,23 +247,16 @@ const Dashboard = () => {
     }
     
     try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', user.id)
-        .single();
-      
-      if (error) throw error;
-      setUserProfile(data);
-      
-      // Update role cache
-      const role = data.role || 'user';
+      // Use new helper to resolve role from admin/users
+      const role = await fetchUserRole(user.id);
       setUserRole(role);
       cachedUserRole = role;
       cachedUserId = user.id;
       setCachedUserRole(role, user.id);
+      // fetch profile-like data from admin/users for display
+      await fetchProfileData();
     } catch (error) {
-      console.error('Error fetching user profile:', error);
+      console.error('Error resolving user role:', error);
       const defaultRole = 'user';
       setUserRole(defaultRole);
       if (user?.id) {
@@ -275,18 +269,26 @@ const Dashboard = () => {
 
   const fetchProfileData = async () => {
     if (!user) return;
-    
     try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
+      // Try admin first
+      let profile: any = null;
+      const { data: adminData } = await supabase
+        .from('admin')
+        .select('id, email, first_name, last_name, status, created_at, updated_at')
         .eq('id', user.id)
-        .single();
-      
-      if (error) throw error;
-      setUserProfile(data);
+        .maybeSingle();
+      if (adminData) profile = adminData;
+      if (!profile) {
+        const { data: userData } = await supabase
+          .from('users')
+          .select('id, email, role, first_name, last_name, status, created_at, updated_at')
+          .eq('id', user.id)
+          .maybeSingle();
+        if (userData) profile = userData;
+      }
+      setUserProfile(profile);
     } catch (error) {
-      console.error('Error fetching user profile:', error);
+      console.error('Error fetching account profile:', error);
     }
   };
 

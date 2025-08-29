@@ -10,6 +10,7 @@ import { CalendarIcon, Clock, Users, BookOpen, Calendar, Star, Loader2, Calendar
 import { supabase } from "@/lib/supabase";
 import { fetchStudents } from "@/lib/supabaseService";
 import { useAuth } from "@/hooks/useAuth";
+import { fetchUserRole } from "@/lib/getUserRole";
 
 export type AttendanceType = "class" | "event" | "other";
 
@@ -51,38 +52,37 @@ const AttendanceForm = ({ onSuccess, onSubmit, initialData }: AttendanceFormProp
   useEffect(() => {
     let isMounted = true;
     const resolveRole = async () => {
-      // 0) Cached role for instant render (prevents initial flicker for known users)
-      const cached = String(getCachedUserRole() || '').toLowerCase();
+      // 1) Set cached role immediately for instant UI
+      const cached = getCachedUserRole();
       if (isMounted && cached) {
         setCurrentRole(cached);
         setRoleReady(true);
       }
 
-      // 1) Immediate metadata read to avoid flicker when available
-      const metaRole = String((user as any)?.user_metadata?.role || (user as any)?.app_metadata?.role || "").toLowerCase();
-      if (isMounted && metaRole) {
-        setCurrentRole(metaRole);
-        setRoleReady(true);
-      }
-
-      // 2) Try profiles.role (source of truth)
+      // 2) Get authoritative role from database
       if (user?.id) {
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('role')
-          .eq('id', user.id)
-          .single();
-        const dbRole = String(profile?.role || "").toLowerCase();
-        if (isMounted && dbRole) {
-          setCurrentRole(dbRole);
-          setRoleReady(true);
-          return;
+        try {
+          const dbRole = await fetchUserRole(user.id);
+          if (isMounted && dbRole) {
+            // Only update if the role actually changed
+            setCurrentRole(prevRole => {
+              if (prevRole !== dbRole) {
+                return dbRole;
+              }
+              return prevRole;
+            });
+          }
+        } catch (error) {
+          console.error('Error resolving user role:', error);
         }
       }
 
-      // 3) If nothing found, still mark ready to render with conservative defaults
-      if (isMounted) setRoleReady(true);
+      // 3) Ensure roleReady is set even if no cached role
+      if (isMounted && !cached) {
+        setRoleReady(true);
+      }
     };
+    
     resolveRole();
     return () => {
       isMounted = false;
@@ -90,13 +90,48 @@ const AttendanceForm = ({ onSuccess, onSubmit, initialData }: AttendanceFormProp
   }, [user?.id]);
 
   const allowedTypes: AttendanceType[] = useMemo(() => {
-    if (currentRole === "admin") return ["class", "event", "other"];
-    if (currentRole === "staff" || currentRole === "instructor") return ["class"];
-    if (currentRole === "ssg_officer") return ["event", "other"];
+    // Use the exact normalized role values from getUserRole.ts
+    if (currentRole === "admin") {
+      return ["class", "event", "other"];
+    }
+    
+    if (currentRole === "Instructor") {
+      return ["class"];
+    }
+    
+    if (currentRole === "SSG officer") {
+      return ["event", "other"];
+    }
+    
+    // Default: Show reasonable initial types based on cached role to prevent flicker
+    if (!currentRole && !roleReady) {
+      const cached = getCachedUserRole();
+      if (cached === "admin") {
+        return ["class", "event", "other"];
+      }
+      if (cached === "Instructor") {
+        return ["class"];
+      }
+      if (cached === "SSG officer") {
+        return ["event", "other"];
+      }
+    }
+    
+    // Fallback for truly unknown roles
     return ["class"];
-  }, [currentRole]);
+  }, [currentRole, roleReady]);
 
-  const [attendanceType, setAttendanceType] = useState<AttendanceType>(initialData?.attendanceType || "class");
+  const [attendanceType, setAttendanceType] = useState<AttendanceType>(() => {
+    if (initialData?.attendanceType) {
+      return initialData.attendanceType;
+    }
+    // Set default based on cached role if available
+    const cached = getCachedUserRole();
+    if (cached === "SSG officer") {
+      return "event";
+    }
+    return "class";
+  });
   const [formData, setFormData] = useState({
     title: initialData?.title || "",
     program: initialData?.program || "",
@@ -107,12 +142,20 @@ const AttendanceForm = ({ onSuccess, onSubmit, initialData }: AttendanceFormProp
     timeOut: initialData?.timeOut || "",
   });
   
-  // Ensure selected type is allowed for the current role
+  // Ensure selected type is allowed for the current role, but only change if truly necessary
   useEffect(() => {
-    if (roleReady && !allowedTypes.includes(attendanceType)) {
-      setAttendanceType(allowedTypes[0]);
+    if (roleReady && allowedTypes.length > 0) {
+      // Only change if the current selection is not allowed
+      if (!allowedTypes.includes(attendanceType)) {
+        // For SSG officers, prefer "event" as default, for instructors prefer "class"
+        if (currentRole === "SSG officer") {
+          setAttendanceType(allowedTypes.includes("event") ? "event" : allowedTypes[0]);
+        } else {
+          setAttendanceType(allowedTypes[0]);
+        }
+      }
     }
-  }, [roleReady, allowedTypes, attendanceType]);
+  }, [roleReady, allowedTypes, attendanceType, currentRole]);
   
   // State for dropdown options
   const [loadingOptions, setLoadingOptions] = useState(false);
@@ -529,11 +572,10 @@ const AttendanceForm = ({ onSuccess, onSubmit, initialData }: AttendanceFormProp
       
       {/* Type Selection */}
       <div className="pb-3">
-        {roleReady && (
-          <div
-            className="grid gap-4 justify-center mx-auto"
-            style={{ gridTemplateColumns: `repeat(${allowedTypes.length}, minmax(12rem, 1fr))`, maxWidth: '900px' }}
-          >
+        <div
+          className="grid gap-4 justify-center mx-auto"
+          style={{ gridTemplateColumns: `repeat(${allowedTypes.length}, minmax(12rem, 1fr))`, maxWidth: '900px' }}
+        >
             {[
               { type: "class" as AttendanceType, label: "Class Session", description: "Regular classroom attendance", bg: "bg-gradient-primary/5", hoverBg: "hover:bg-gradient-primary/10" },
               { type: "event" as AttendanceType, label: "School Event", description: "Assemblies, ceremonies, programs", bg: "bg-gradient-accent/5", hoverBg: "hover:bg-gradient-accent/10" },
@@ -581,8 +623,7 @@ const AttendanceForm = ({ onSuccess, onSubmit, initialData }: AttendanceFormProp
                 </div>
               </div>
             ))}
-          </div>
-        )}
+        </div>
       </div>
 
       {/* Dynamic Form */}

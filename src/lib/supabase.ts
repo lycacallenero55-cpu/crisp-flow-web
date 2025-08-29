@@ -1,25 +1,30 @@
 import { type Session, type AuthChangeEvent } from '@supabase/supabase-js';
-import { supabase } from '@/integrations/supabase/client';
-export { supabase };
+export { supabase } from '@/integrations/supabase/client';
 
 // Helper to get the current user with profile data
 export const getCurrentUser = async () => {
   const { data: { user }, error } = await supabase.auth.getUser();
   if (!user) return { user: null, error };
   
-  // Get additional profile data
-  const { data: profile } = await supabase
-    .from('profiles')
+  // Get additional profile data (admin first, then users)
+  const { data: adminData } = await supabase
+    .from('admin')
     .select('*')
     .eq('id', user.id)
-    .single();
+    .maybeSingle();
+  const { data: userData } = adminData ? { data: null as any } : await supabase
+    .from('users')
+    .select('*')
+    .eq('id', user.id)
+    .maybeSingle();
+  const profile: any = adminData || userData || {};
 
   return {
     user: {
       id: user.id,
       email: user.email || '',
       name: `${profile?.first_name || ''} ${profile?.last_name || ''}`.trim(),
-      role: (profile as any)?.role || 'ssg_officer',
+      role: (profile as any)?.role || (adminData ? 'admin' : 'SSG officer'),
       avatar_url: (profile as any)?.avatar_url || '',
     },
     error,
@@ -53,18 +58,7 @@ export const signUpWithEmail = async (email: string, password: string, userData:
   
   if (error) return { data: null, error };
   
-  // Create a profile for the new user (trigger also handles this)
-  if (data.user) {
-    const [firstName, ...rest] = (userData.name || '').split(' ');
-    const lastName = rest.join(' ');
-    await supabase.from('profiles').upsert({
-      id: data.user.id,
-      email: data.user.email || email,
-      first_name: firstName,
-      last_name: lastName,
-      role: 'ssg_officer',
-    });
-  }
+  // NOTE: With split tables, app should insert into 'users' explicitly elsewhere if needed
   
   return { data, error: null };
 };

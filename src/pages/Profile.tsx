@@ -47,14 +47,23 @@ const Profile = () => {
       if (!user) return;
 
       try {
-        const { data: profile, error } = await supabase
-          .from('profiles')
+        // Try admin first
+        const { data: adminData } = await supabase
+          .from('admin')
           .select('*')
           .eq('id', user.id)
-          .single();
-
-        if (error) throw error;
-        setUserProfile(profile);
+          .maybeSingle();
+        if (adminData) {
+          // Ensure role is present for admin accounts so UI shows Admin
+          setUserProfile({ ...adminData, role: 'admin' });
+        } else {
+          const { data: userData } = await supabase
+            .from('users')
+            .select('*')
+            .eq('id', user.id)
+            .maybeSingle();
+          setUserProfile(userData);
+        }
       } catch (error) {
         console.error('Error fetching user profile:', error);
       } finally {
@@ -77,8 +86,10 @@ const Profile = () => {
 
     setIsUpdatingProfile(true);
     try {
+      // Update to the correct table
+      const targetTable = userProfile?.role ? 'users' : 'admin';
       const { error } = await supabase
-        .from('profiles')
+        .from(targetTable)
         .update({
           first_name: editFirstName.trim(),
           last_name: editLastName.trim(),
@@ -206,40 +217,26 @@ const Profile = () => {
       .toUpperCase();
   };
 
-  // Get role display name
+  // Normalize and display role name for both legacy and new roles
   const getRoleDisplayName = (role: string) => {
-    switch (role) {
-      case 'admin':
-        return 'Administrator';
-      case 'instructor':
-        return 'Instructor';
-      case 'student':
-        return 'Student';
-      case 'staff':
-        return 'Staff';
-      case 'ssg_officer':
-        return 'SSG Officer';
-      default:
-        return 'User';
-    }
+    const r = (role || '').toLowerCase().replace(/_/g, ' ');
+    if (r === 'admin') return 'Administrator';
+    if (r === 'instructor' || r === 'staff') return 'Instructor';
+    if (r === 'ssg officer' || r === 'ssg_officer') return 'SSG Officer';
+    if (r === 'rotc admin') return 'ROTC Admin';
+    if (r === 'rotc officer') return 'ROTC Officer';
+    if (r === 'student') return 'Student';
+    return 'User';
   };
 
   // Get role badge variant
   const getRoleBadgeVariant = (role: string) => {
-    switch (role) {
-      case 'admin':
-        return 'destructive';
-      case 'instructor':
-        return 'default';
-      case 'student':
-        return 'secondary';
-      case 'staff':
-        return 'default';
-      case 'ssg_officer':
-        return 'secondary';
-      default:
-        return 'outline';
-    }
+    const r = (role || '').toLowerCase().replace(/_/g, ' ');
+    if (r === 'admin') return 'destructive';
+    if (r === 'instructor' || r === 'staff') return 'default';
+    if (r === 'ssg officer' || r === 'rotc admin' || r === 'rotc officer') return 'secondary';
+    if (r === 'student') return 'secondary';
+    return 'outline';
   };
 
   return (

@@ -27,6 +27,7 @@ import { useState, useEffect, useRef } from "react";
 import { useMediaQuery } from "../../hooks/use-media-query";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/lib/supabase";
+import { fetchUserRole, AppRole } from "@/lib/getUserRole";
 import { useSidebar } from "@/contexts/SidebarContext";
 
 // Persistent role cache to prevent refetching and flashing on refresh
@@ -84,7 +85,7 @@ const getNavItems = (userRole: string = '') => [
   },
   { icon: Users, label: "Students", href: "/students" },
   { icon: BarChartBig, label: "Reports", href: "/reports" },
-  ...(['admin', 'instructor', 'staff'].includes(userRole) ? [{ icon: Book, label: "Subjects", href: "/subjects" }] : []),
+  ...(['admin', 'Instructor', 'SSG officer', 'ROTC admin', 'ROTC officer'].includes(userRole) ? [{ icon: Book, label: "Subjects", href: "/subjects" }] : []),
   { 
     icon: FileText, 
     label: "Excuse Application", 
@@ -128,17 +129,8 @@ const DesktopNavigation = () => {
       }
       
       try {
-        const { data: profile, error } = await supabase
-          .from('profiles')
-          .select('role')
-          .eq('id', user.id)
-          .single();
-
-        if (error) throw error;
-        const role = profile.role || 'user';
+        const role = await fetchUserRole(user.id);
         setUserRole(role);
-        
-        // Cache the role and user ID both in memory and localStorage
         cachedUserRole = role;
         cachedUserId = user.id;
         setCachedUserRole(role, user.id);
@@ -164,14 +156,10 @@ const DesktopNavigation = () => {
   }, [user?.id]); // Only depend on user ID, not the full user object
 
   const getPanelLabel = () => {
-    switch (userRole) {
-      case 'admin':
-        return 'Admin Panel';
-      case 'instructor':
-        return 'Instructor Panel';
-      default:
-        return 'User Panel';
-    }
+    if (userRole === 'admin') return 'Admin Panel';
+    if (userRole === 'Instructor') return 'Instructor Panel';
+    if (userRole === 'SSG officer') return 'SSG Officer Panel';
+    return 'User Panel';
   };
 
   const shouldShowItem = (item: typeof navItems[0]) => {
@@ -605,17 +593,8 @@ const MobileDrawer = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => voi
       }
       
       try {
-        const { data: profile, error } = await supabase
-          .from('profiles')
-          .select('role')
-          .eq('id', user.id)
-          .single();
-
-        if (error) throw error;
-        const role = profile.role || 'user';
+        const role = await fetchUserRole(user.id);
         setUserRole(role);
-        
-        // Cache the role and user ID both in memory and localStorage
         cachedUserRole = role;
         cachedUserId = user.id;
         setCachedUserRole(role, user.id);

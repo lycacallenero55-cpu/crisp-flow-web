@@ -14,22 +14,19 @@ import { supabase } from "@/lib/supabase";
 export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [role, setRole] = useState("");
   const [loginRole, setLoginRole] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const { signIn, signUp } = useAuth();
   const navigate = useNavigate();
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (!loginRole) {
-      toast.error("Please select a role");
-      return;
-    }
     
     setIsLoading(true);
 
@@ -40,31 +37,45 @@ export default function Login() {
         throw error;
       }
       
-      // After successful login, verify the role matches
-      const { data: profile, error: profileError } = await supabase
-        .from('profiles')
-        .select('role')
+      // After successful login, verify the role matches against admin/users
+      let actualRole: string | null = null;
+      const { data: adminRec } = await supabase
+        .from('admin')
+        .select('id')
         .eq('email', email)
-        .single();
-      
-      if (profileError) {
-        toast.error("Failed to verify user role");
-        return;
+        .maybeSingle();
+      if (adminRec) {
+        actualRole = 'admin';
+      } else {
+        const { data: userRec } = await supabase
+          .from('users')
+          .select('role')
+          .eq('email', email)
+          .maybeSingle();
+        actualRole = userRec?.role || null;
       }
-      
-      if (profile.role !== loginRole) {
-        toast.error(`Invalid role selected. Your account role is: ${profile.role}`);
-        // Sign out the user since role doesn't match
-        await supabase.auth.signOut();
-        return;
+
+      // Admin: must NOT select any role; allow only when no role is selected
+      if (actualRole === 'admin') {
+        if (loginRole) {
+          toast.error('Invalid credentials or role mismatch.');
+          await supabase.auth.signOut();
+          return;
+        }
+      } else {
+        // Non-admin: must select the correct role
+        if (!loginRole || actualRole !== loginRole) {
+          toast.error('Invalid credentials or role mismatch.');
+          await supabase.auth.signOut();
+          return;
+        }
       }
       
       toast.success("Successfully logged in!");
       navigate("/")
     } catch (error) {
       console.error("Error signing in:", error);
-      const errorMessage = error instanceof Error ? error.message : "Failed to sign in. Please check your credentials.";
-      toast.error(errorMessage);
+      toast.error("Invalid credentials or role mismatch.");
     } finally {
       setIsLoading(false);
     }
@@ -74,6 +85,10 @@ export default function Login() {
     e.preventDefault();
     if (!role) {
       toast.error("Please select a role");
+      return;
+    }
+    if (password !== confirmPassword) {
+      toast.error("Passwords do not match");
       return;
     }
     
@@ -106,7 +121,7 @@ export default function Login() {
           </CardDescription>
         </CardHeader>
         <Tabs defaultValue="signin" className="w-full">
-          <TabsList className="grid w-full grid-cols-2 mb-4">
+          <TabsList className="grid w-full grid-cols-2 mb-4 px-6">
             <TabsTrigger value="signin">Sign In</TabsTrigger>
             <TabsTrigger value="signup">Sign Up</TabsTrigger>
           </TabsList>
@@ -161,14 +176,18 @@ export default function Login() {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="login-role">Role</Label>
-                  <Select value={loginRole} onValueChange={setLoginRole} required>
+                  <Select
+                    value={loginRole || undefined}
+                    onValueChange={(val) => setLoginRole((prev) => (prev === val ? "" : val))}
+                  >
                     <SelectTrigger>
                       <SelectValue placeholder="Select your role" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="admin">Admin</SelectItem>
-                      <SelectItem value="staff">Staff</SelectItem>
-                      <SelectItem value="ssg_officer">SSG Officer</SelectItem>
+                      <SelectItem value="Instructor">Instructor</SelectItem>
+                      <SelectItem value="SSG officer">SSG Officer</SelectItem>
+                      <SelectItem value="ROTC admin">ROTC Admin</SelectItem>
+                      <SelectItem value="ROTC officer">ROTC Officer</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -220,19 +239,6 @@ export default function Login() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="role">Role</Label>
-                  <Select value={role} onValueChange={setRole} required>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select your role" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="admin">Admin</SelectItem>
-                      <SelectItem value="staff">Staff</SelectItem>
-                      <SelectItem value="ssg_officer">SSG Officer</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
                   <Label htmlFor="signup-password">Password</Label>
                   <div className="relative">
                     <Input
@@ -260,6 +266,54 @@ export default function Login() {
                       </span>
                     </Button>
                   </div>
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="signup-confirm-password">Confirm Password</Label>
+                  <div className="relative">
+                    <Input
+                      id="signup-confirm-password"
+                      type={showConfirmPassword ? "text" : "password"}
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      required
+                      className="pr-10"
+                    />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    >
+                      {showConfirmPassword ? (
+                        <EyeOff className="h-4 w-4 text-muted-foreground" />
+                      ) : (
+                        <Eye className="h-4 w-4 text-muted-foreground" />
+                      )}
+                      <span className="sr-only">
+                        {showConfirmPassword ? "Hide password" : "Show password"}
+                      </span>
+                    </Button>
+                  </div>
+                  {confirmPassword && (
+                    <div className={`text-xs ${confirmPassword === password ? 'text-green-600' : 'text-destructive'}`}>
+                      {confirmPassword === password ? 'Passwords match.' : 'Passwords do not match.'}
+                    </div>
+                  )}
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="role">Role</Label>
+                  <Select value={role} onValueChange={setRole} required>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select your role" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Instructor">Instructor</SelectItem>
+                      <SelectItem value="SSG officer">SSG Officer</SelectItem>
+                      <SelectItem value="ROTC admin">ROTC Admin</SelectItem>
+                      <SelectItem value="ROTC officer">ROTC Officer</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
               </CardContent>
               <CardFooter>

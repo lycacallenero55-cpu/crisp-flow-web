@@ -1279,12 +1279,7 @@ const Schedule = () => {
 
         {/* Sessions List */}
         <div className="space-y-2">
-          <div className="flex items-center justify-between">
-            <h3 className="text-base font-semibold text-education-navy flex items-center gap-2">
-              <CalendarClock className="w-4 h-4" />
-              <span className="text-sm">Scheduled Sessions</span>
-            </h3>
-          </div>
+    
           
           <div className="grid gap-2">
             {isLoading ? (

@@ -86,18 +86,31 @@ const Accounts = () => {
     if (!user) return;
     
     try {
-      const { data, error } = await supabase
-        .from('profiles')
+      // Try admin first
+      const { data: adminData } = await supabase
+        .from('admin')
         .select('*')
         .eq('id', user.id)
-        .single();
+        .maybeSingle();
+      
+      let data: any = adminData;
+      if (adminData) {
+        // Explicitly set role to 'admin' for admin users
+        data = { ...adminData, role: 'admin' };
+      } else {
+        const { data: userData } = await supabase
+          .from('users')
+          .select('*')
+          .eq('id', user.id)
+          .maybeSingle();
+        data = userData;
+      }
 
-      if (error) throw error;
       setCurrentUserProfile(data);
       
       // If user is admin, load all profiles, otherwise just set their own
-      if (data?.role === 'admin') {
-        loadAllProfiles();
+      if (adminData) {
+        loadAllAccounts();
       } else {
         setProfiles([data]);
         setIsLoading(false);
@@ -109,18 +122,24 @@ const Accounts = () => {
     }
   };
 
-  // Load all profiles (only for admins)
-  const loadAllProfiles = async () => {
+  // Load all accounts (only for admins)
+  const loadAllAccounts = async () => {
     try {
-      const { data, error } = await supabase
-        .from('profiles')
+      const { data: admins } = await supabase
+        .from('admin')
+        .select('*')
+        .order('created_at', { ascending: false });
+      const { data: usersRows } = await supabase
+        .from('users')
         .select('*')
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
-      setProfiles(data || []);
+      // Explicitly set role to 'admin' for admin users
+      const adminProfiles = (admins || []).map(admin => ({ ...admin, role: 'admin' as UserRole }));
+      
+      setProfiles([...adminProfiles, ...(usersRows || [])]);
     } catch (error) {
-      console.error('Error loading profiles:', error);
+      console.error('Error loading accounts:', error);
       toast.error('Failed to load accounts');
     } finally {
       setIsLoading(false);
@@ -224,29 +243,6 @@ const Accounts = () => {
                   onChange={(e) => setSearchTerm(e.target.value)}
                 />
               </div>
-              <Select value={selectedRole} onValueChange={setSelectedRole}>
-                <SelectTrigger className="h-10 min-w-[140px] border-border hover:bg-muted/80 transition-colors duration-200">
-                  <SelectValue placeholder="Filter by role" />
-                </SelectTrigger>
-                <SelectContent className="bg-popover border-border shadow-elegant">
-                  <SelectItem value="all">All Roles</SelectItem>
-                  <SelectItem value="admin">Admin</SelectItem>
-                  <SelectItem value="staff">Staff</SelectItem>
-                  <SelectItem value="ssg_officer">SSG Officer</SelectItem>
-                </SelectContent>
-              </Select>
-              <Select value={selectedStatus} onValueChange={setSelectedStatus}>
-                <SelectTrigger className="h-10 min-w-[140px] border-border hover:bg-muted/80 transition-colors duration-200">
-                  <SelectValue placeholder="Filter by status" />
-                </SelectTrigger>
-                <SelectContent className="bg-popover border-border shadow-elegant">
-                  <SelectItem value="all">All Statuses</SelectItem>
-                  <SelectItem value="pending">Pending</SelectItem>
-                  <SelectItem value="active">Active</SelectItem>
-                  <SelectItem value="inactive">Inactive</SelectItem>
-                  <SelectItem value="suspended">Suspended</SelectItem>
-                </SelectContent>
-              </Select>
             </div>
           </div>
         )}

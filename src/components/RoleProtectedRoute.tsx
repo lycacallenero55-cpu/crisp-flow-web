@@ -1,7 +1,7 @@
 import { Navigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useState, useEffect, useRef } from "react";
-import { supabase } from "@/lib/supabase";
+import { fetchUserRole } from "@/lib/getUserRole";
 
 interface RoleProtectedRouteProps {
   children: JSX.Element;
@@ -77,14 +77,7 @@ export const RoleProtectedRoute = ({ children, allowedRoles }: RoleProtectedRout
       setLoading(true);
       
       try {
-        const { data: profile, error } = await supabase
-          .from('profiles')
-          .select('role')
-          .eq('id', user.id)
-          .single();
-
-        if (error) throw error;
-        const role = profile.role || 'user';
+        const role = await fetchUserRole(user.id);
         setUserRole(role);
         
         // Cache the role and user ID both in memory and localStorage
