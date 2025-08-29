@@ -1,6 +1,5 @@
 import { type Session, type AuthChangeEvent } from '@supabase/supabase-js';
-import { supabase } from '@/integrations/supabase/client';
-export { supabase };
+export { supabase } from '@/integrations/supabase/client';
 
 // Helper to get the current user with profile data
 export const getCurrentUser = async () => {
