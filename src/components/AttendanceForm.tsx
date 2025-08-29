@@ -52,30 +52,33 @@ const AttendanceForm = ({ onSuccess, onSubmit, initialData }: AttendanceFormProp
   useEffect(() => {
     let isMounted = true;
     const resolveRole = async () => {
-      let finalRole = '';
-
-      // 1) Check cached role first for immediate UI
+      // 1) Set cached role immediately for instant UI
       const cached = getCachedUserRole();
-      if (cached) {
-        finalRole = cached;
+      if (isMounted && cached) {
+        setCurrentRole(cached);
+        setRoleReady(true);
       }
 
-      // 2) Check database using fetchUserRole (handles admin and users tables correctly)
+      // 2) Get authoritative role from database
       if (user?.id) {
         try {
           const dbRole = await fetchUserRole(user.id);
-          if (dbRole) {
-            finalRole = dbRole;
+          if (isMounted && dbRole) {
+            // Only update if the role actually changed
+            setCurrentRole(prevRole => {
+              if (prevRole !== dbRole) {
+                return dbRole;
+              }
+              return prevRole;
+            });
           }
         } catch (error) {
           console.error('Error resolving user role:', error);
         }
       }
 
-      // 3) Set final role and mark ready (only one update)
-      if (isMounted) {
-        console.log('AttendanceForm: Setting final role:', finalRole || 'user');
-        setCurrentRole(finalRole || 'user');
+      // 3) Ensure roleReady is set even if no cached role
+      if (isMounted && !cached) {
         setRoleReady(true);
       }
     };
@@ -100,9 +103,23 @@ const AttendanceForm = ({ onSuccess, onSubmit, initialData }: AttendanceFormProp
       return ["event", "other"];
     }
     
-    // Default for unknown roles
+    // Default: Show reasonable initial types based on cached role to prevent flicker
+    if (!currentRole && !roleReady) {
+      const cached = getCachedUserRole();
+      if (cached === "admin") {
+        return ["class", "event", "other"];
+      }
+      if (cached === "Instructor") {
+        return ["class"];
+      }
+      if (cached === "SSG officer") {
+        return ["event", "other"];
+      }
+    }
+    
+    // Fallback for truly unknown roles
     return ["class"];
-  }, [currentRole]);
+  }, [currentRole, roleReady]);
 
   const [attendanceType, setAttendanceType] = useState<AttendanceType>(() => {
     if (initialData?.attendanceType) {
@@ -555,11 +572,10 @@ const AttendanceForm = ({ onSuccess, onSubmit, initialData }: AttendanceFormProp
       
       {/* Type Selection */}
       <div className="pb-3">
-        {roleReady && (
-          <div
-            className="grid gap-4 justify-center mx-auto"
-            style={{ gridTemplateColumns: `repeat(${allowedTypes.length}, minmax(12rem, 1fr))`, maxWidth: '900px' }}
-          >
+        <div
+          className="grid gap-4 justify-center mx-auto"
+          style={{ gridTemplateColumns: `repeat(${allowedTypes.length}, minmax(12rem, 1fr))`, maxWidth: '900px' }}
+        >
             {[
               { type: "class" as AttendanceType, label: "Class Session", description: "Regular classroom attendance", bg: "bg-gradient-primary/5", hoverBg: "hover:bg-gradient-primary/10" },
               { type: "event" as AttendanceType, label: "School Event", description: "Assemblies, ceremonies, programs", bg: "bg-gradient-accent/5", hoverBg: "hover:bg-gradient-accent/10" },
@@ -607,8 +623,7 @@ const AttendanceForm = ({ onSuccess, onSubmit, initialData }: AttendanceFormProp
                 </div>
               </div>
             ))}
-          </div>
-        )}
+        </div>
       </div>
 
       {/* Dynamic Form */}
