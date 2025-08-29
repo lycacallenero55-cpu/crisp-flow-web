@@ -120,14 +120,7 @@ const TakeAttendanceContent: React.FC = () => {
       // Build the query with filters
       let query = supabase
         .from('sessions')
-        .select(`
-          *,
-          creator:created_by_user_id(
-            first_name,
-            last_name,
-            role
-          )
-        `, { count: 'exact' });
+        .select(`*`, { count: 'exact' });
       
       // Removed date range filter to fetch all sessions
       // Date filtering will be handled client-side for the tabs
@@ -161,7 +154,7 @@ const TakeAttendanceContent: React.FC = () => {
         time_in: session.time_in || '00:00',
         time_out: session.time_out || '00:00',
         created_by_user_id: session.created_by_user_id,
-        creator: session.creator,
+        // Creator details removed; no embedded join available after schema change
         capacity: String(session.capacity || 0),
         program: session.program || '',
         year: session.year || '',
@@ -420,13 +413,7 @@ const SessionCard: React.FC<SessionCardProps> = ({ session, onStartAttendance })
             </div>
           </div>
           <div className="space-y-1">
-            <div className="text-muted-foreground text-ellipsis overflow-hidden">
-              <span className="font-medium">Created by:</span> {
-                session.creator 
-                  ? `${session.creator.role.charAt(0).toUpperCase() + session.creator.role.slice(1)} (${session.creator.first_name} ${session.creator.last_name})`
-                  : 'System'
-              }
-            </div>
+            {/* Creator display disabled due to schema change (profiles split). Can be restored by fetching from admin/users by created_by_user_id. */}
           </div>
         </div>
         <Button 
