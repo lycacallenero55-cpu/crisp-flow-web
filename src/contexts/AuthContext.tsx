@@ -94,7 +94,23 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         setError(signUpError.message);
         return { error: signUpError };
       }
-      
+      // Insert into users table (non-admin accounts only)
+      if (data?.user) {
+        const normalizedRole = role; // role already chosen from allowed set
+        const { error: insertErr } = await supabase
+          .from('users')
+          .insert([{
+            id: data.user.id,
+            email,
+            first_name: firstName,
+            last_name: lastName,
+            role: normalizedRole,
+          }]);
+        if (insertErr) {
+          console.error('Error inserting users row:', insertErr);
+        }
+      }
+
       return { data, error: null };
     } catch (err) {
       const error = err as AuthError;

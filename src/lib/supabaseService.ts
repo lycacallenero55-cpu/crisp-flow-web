@@ -596,18 +596,24 @@ export const getCurrentUser = async (): Promise<User | null> => {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return null;
   
-  // Get additional user data from profiles table if needed
-  const { data: profile } = await supabase
-    .from('profiles')
+  // Get additional user data from admin/users tables
+  const { data: adminData } = await supabase
+    .from('admin')
     .select('*')
     .eq('id', user.id)
-    .single();
+    .maybeSingle();
+  const { data: userData } = adminData ? { data: null as any } : await supabase
+    .from('users')
+    .select('*')
+    .eq('id', user.id)
+    .maybeSingle();
+  const profile: any = adminData || userData || {};
   
   return {
     id: user.id,
     email: user.email || '',
-    name: (profile as any)?.full_name || user.user_metadata?.full_name || '',
-    role: (profile as any)?.role || 'ssg_officer',
+    name: `${profile?.first_name || ''} ${profile?.last_name || ''}`.trim() || user.user_metadata?.full_name || '',
+    role: (profile as any)?.role || (adminData ? 'admin' : 'SSG officer'),
     avatar_url: (profile as any)?.avatar_url || '',
   };
 };
@@ -625,17 +631,26 @@ export const updateUserProfile = async (updates: Partial<User>): Promise<User> =
     if (error) throw error;
   }
   
-  // Update profile
+  // Update account in the correct table
+  const isAdmin = !!(await supabase.from('admin').select('id').eq('id', user.id).maybeSingle()).data;
+  const target = isAdmin ? 'admin' : 'users';
+  const payload: any = {
+    updated_at: new Date().toISOString(),
+  };
+  if (updates.name) {
+    const [first, ...rest] = updates.name.split(' ');
+    payload.first_name = first;
+    payload.last_name = rest.join(' ');
+  }
+  if (updates.role && !isAdmin) {
+    payload.role = updates.role;
+  }
   const { data, error } = await supabase
-    .from('profiles')
-    .upsert({
-      id: user.id,
-      full_name: updates.name,
-      role: updates.role,
-      updated_at: new Date().toISOString(),
-    } as any)
+    .from(target)
+    .update(payload)
+    .eq('id', user.id)
     .select()
-    .single();
+    .maybeSingle();
   
   if (error) throw error;
   

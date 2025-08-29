@@ -40,19 +40,25 @@ export default function Login() {
         throw error;
       }
       
-      // After successful login, verify the role matches
-      const { data: profile, error: profileError } = await supabase
-        .from('profiles')
-        .select('role')
+      // After successful login, verify the role matches against admin/users
+      let actualRole: string | null = null;
+      const { data: adminRec } = await supabase
+        .from('admin')
+        .select('id')
         .eq('email', email)
-        .single();
-      
-      if (profileError) {
-        toast.error("Failed to verify user role");
-        return;
+        .maybeSingle();
+      if (adminRec) {
+        actualRole = 'admin';
+      } else {
+        const { data: userRec } = await supabase
+          .from('users')
+          .select('role')
+          .eq('email', email)
+          .maybeSingle();
+        actualRole = userRec?.role || null;
       }
-      
-      if (profile.role !== loginRole) {
+
+      if (!actualRole || actualRole !== loginRole) {
         toast.error(`Invalid role selected. Your account role is: ${profile.role}`);
         // Sign out the user since role doesn't match
         await supabase.auth.signOut();
@@ -226,9 +232,10 @@ export default function Login() {
                       <SelectValue placeholder="Select your role" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="admin">Admin</SelectItem>
-                      <SelectItem value="staff">Staff</SelectItem>
-                      <SelectItem value="ssg_officer">SSG Officer</SelectItem>
+                      <SelectItem value="Instructor">Instructor</SelectItem>
+                      <SelectItem value="SSG officer">SSG Officer</SelectItem>
+                      <SelectItem value="ROTC admin">ROTC Admin</SelectItem>
+                      <SelectItem value="ROTC officer">ROTC Officer</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
