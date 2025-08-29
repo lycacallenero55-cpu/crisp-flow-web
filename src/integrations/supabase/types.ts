@@ -302,15 +302,7 @@ export type Database = {
           updated_at?: string | null
           year?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "sessions_created_by_user_id_fkey"
-            columns: ["created_by_user_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       signatures: {
         Row: {
