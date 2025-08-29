@@ -178,6 +178,7 @@ export default function Login() {
                       <SelectValue placeholder="Select your role" />
                     </SelectTrigger>
                     <SelectContent>
+                      <SelectItem value="admin">Admin</SelectItem>
                       <SelectItem value="Instructor">Instructor</SelectItem>
                       <SelectItem value="SSG officer">SSG Officer</SelectItem>
                       <SelectItem value="ROTC admin">ROTC Admin</SelectItem>
