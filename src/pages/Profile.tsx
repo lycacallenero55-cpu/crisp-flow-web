@@ -54,7 +54,8 @@ const Profile = () => {
           .eq('id', user.id)
           .maybeSingle();
         if (adminData) {
-          setUserProfile(adminData);
+          // Ensure role is present for admin accounts so UI shows Admin
+          setUserProfile({ ...adminData, role: 'admin' });
         } else {
           const { data: userData } = await supabase
             .from('users')

@@ -156,14 +156,10 @@ const DesktopNavigation = () => {
   }, [user?.id]); // Only depend on user ID, not the full user object
 
   const getPanelLabel = () => {
-    switch (userRole) {
-      case 'admin':
-        return 'Admin Panel';
-      case 'instructor':
-        return 'Instructor Panel';
-      default:
-        return 'User Panel';
-    }
+    if (userRole === 'admin') return 'Admin Panel';
+    if (userRole === 'Instructor') return 'Instructor Panel';
+    if (userRole === 'SSG officer') return 'SSG Officer Panel';
+    return 'User Panel';
   };
 
   const shouldShowItem = (item: typeof navItems[0]) => {
